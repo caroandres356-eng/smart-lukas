@@ -12,7 +12,6 @@ import pytest
 from core.modelos import CambioPolitica, Cotizacion, Movimiento, Operacion
 from fakes import fakes
 
-PENDIENTE = pytest.mark.skip(reason="Persona 2: pendiente")
 HOY = date(2026, 11, 1)
 
 
