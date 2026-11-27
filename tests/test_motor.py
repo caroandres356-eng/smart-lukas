@@ -87,7 +87,6 @@ def test_aplicar_cambio_dos_veces_misma_categoria_deja_una_regla(politica):
 # --------------------------------------------------------------------------- decisor (6 reglas)
 
 
-@PENDIENTE
 def test_450_requiere_aprobacion_y_menciona_300(politica):
     from motor.decisor import evaluar
 
@@ -96,7 +95,6 @@ def test_450_requiere_aprobacion_y_menciona_300(politica):
     assert "300" in v.motivo and "450" in v.motivo
 
 
-@PENDIENTE
 def test_permitir_hasta_500_arriendo_vuelve_auto(politica):
     from motor.decisor import evaluar
     from motor.politica import aplicar_cambio
@@ -107,7 +105,6 @@ def test_permitir_hasta_500_arriendo_vuelve_auto(politica):
     assert "500" in v.motivo
 
 
-@PENDIENTE
 def test_permitir_hasta_no_aplica_si_el_monto_no_cabe(politica):
     from motor.decisor import evaluar
     from motor.politica import aplicar_cambio
@@ -116,7 +113,6 @@ def test_permitir_hasta_no_aplica_si_el_monto_no_cabe(politica):
     assert evaluar(conversion(450), p, Decimal(0), Decimal(850)).estado == "requiere_aprobacion"
 
 
-@PENDIENTE
 def test_regla_bloquear_gana_a_todo(politica):
     from motor.decisor import evaluar
     from motor.politica import aplicar_cambio
@@ -126,7 +122,6 @@ def test_regla_bloquear_gana_a_todo(politica):
     assert v.estado == "bloqueada"
 
 
-@PENDIENTE
 def test_colchon_bloquea(politica):
     from motor.decisor import evaluar
 
@@ -135,7 +130,6 @@ def test_colchon_bloquea(politica):
     assert "200" in v.motivo and "150" in v.motivo
 
 
-@PENDIENTE
 def test_limite_diario_pide_aprobacion(politica):
     from motor.decisor import evaluar
 
@@ -144,13 +138,63 @@ def test_limite_diario_pide_aprobacion(politica):
     assert "500" in v.motivo
 
 
-@PENDIENTE
 def test_operacion_pequena_es_auto(politica):
     from motor.decisor import evaluar
 
     v = evaluar(conversion(30, categoria="internet"), politica, Decimal(0), Decimal(850))
     assert v.estado == "auto"
     assert v.motivo
+
+
+def test_usd_a_usdt_es_movimiento_interno(politica):
+    from motor.decisor import evaluar
+
+    op = Operacion(tipo="conversion", desde="USD", hacia="USDT", monto=Decimal(900), categoria="impuestos", fecha_programada=HOY)
+    v = evaluar(op, politica, acumulado_dia_usd=Decimal(499), saldo_usd=Decimal(100))
+    assert v.estado == "auto"
+    assert v.motivo == "Movimiento interno entre tus saldos; no cuenta para tus límites"
+
+
+def test_bloquear_gana_a_permitir_hasta(politica):
+    from motor.decisor import evaluar
+
+    p = politica.model_copy(update={"reglas_aprendidas": [
+        CambioPolitica(accion="bloquear", tipo="conversion", categoria="arriendo"),
+        CambioPolitica(accion="permitir_hasta", tipo="conversion", categoria="arriendo", monto_max_usd=Decimal(500)),
+    ]})
+    v = evaluar(conversion(10), p, Decimal(0), Decimal(850))
+    assert v.estado == "bloqueada" and "arriendo" in v.motivo
+
+
+def test_colchon_va_antes_que_el_limite_por_operacion(politica):
+    from motor.decisor import evaluar
+
+    v = evaluar(conversion("454.55"), politica, Decimal(0), saldo_usd=Decimal(600))
+    assert v.estado == "bloqueada"
+    assert v.motivo == "Te dejaría 145,45 USD, por debajo de tu colchón de 200 USD"
+
+
+def test_motivo_por_operacion_con_decimales(politica):
+    from motor.decisor import evaluar
+
+    v = evaluar(conversion("454.55"), politica, Decimal(0), Decimal(850))
+    assert v.motivo == "454,55 USD supera tu límite de 300 USD por operación"
+
+
+def test_motivo_limite_diario_con_numeros(politica):
+    from motor.decisor import evaluar
+
+    v = evaluar(conversion(200, categoria="resto"), politica, acumulado_dia_usd=Decimal(450), saldo_usd=Decimal(850))
+    assert v.motivo == "Con esta operación hoy llevarías 650 USD y tu límite diario es 500 USD"
+
+
+def test_usdt_a_cop_cuenta_para_limites_pero_no_para_el_colchon(politica):
+    from motor.decisor import evaluar
+
+    v = evaluar(conversion(50, categoria="escalonado", desde="USDT"), politica, Decimal(0), saldo_usd=Decimal(0))
+    assert v.estado == "auto"
+    v = evaluar(conversion(350, categoria="escalonado", desde="USDT"), politica, Decimal(0), saldo_usd=Decimal(0))
+    assert v.estado == "requiere_aprobacion"
 
 
 # --------------------------------------------------------------------------- rutas y propuesta
@@ -296,7 +340,6 @@ def test_ninguna_ruta_toca_reservas(politica):
         assert all(o.categoria != "impuestos" for o in r.operaciones)
 
 
-@PENDIENTE
 def test_proponer_elige_lo_justo_hoy_y_calcula_ahorro(politica):
     from motor.decisor import proponer
 
@@ -307,6 +350,52 @@ def test_proponer_elige_lo_justo_hoy_y_calcula_ahorro(politica):
     assert p.ahorro_cop > 0
     arriendo = next(v for v in p.veredictos if v.operacion.categoria == "arriendo")
     assert arriendo.estado == "requiere_aprobacion"
+
+
+def _propuesta(politica):
+    from motor.decisor import proponer
+
+    return proponer(fakes.cargar_ingreso_ejemplo(), fakes.BancoFalso(), fakes.MercadoFalso(), fakes.RelojFalso(), politica)
+
+
+def test_proponer_arriendo_pide_aprobacion_y_menciona_300(politica):
+    p = _propuesta(politica)
+    arriendo = next(v for v in p.veredictos if v.operacion.categoria == "arriendo")
+    assert arriendo.estado == "requiere_aprobacion"
+    assert "300" in arriendo.motivo
+
+
+def test_proponer_tras_permitir_hasta_500_arriendo_es_auto(politica):
+    from motor.politica import aplicar_cambio
+
+    p = _propuesta(aplicar_cambio(politica, CambioPolitica(accion="permitir_hasta", tipo="conversion", categoria="arriendo", monto_max_usd=Decimal(500))))
+    assert next(v for v in p.veredictos if v.operacion.categoria == "arriendo").estado == "auto"
+
+
+def test_proponer_con_regla_bloquear_arriendo_queda_bloqueada(politica):
+    from motor.politica import aplicar_cambio
+
+    p = _propuesta(aplicar_cambio(politica, CambioPolitica(accion="bloquear", tipo="conversion", categoria="arriendo")))
+    assert next(v for v in p.veredictos if v.operacion.categoria == "arriendo").estado == "bloqueada"
+
+
+def test_proponer_ahorro_es_b_menos_a_y_no_elige_invalidas(politica):
+    p = _propuesta(politica)
+    rutas = {r.nombre: r for r in p.rutas}
+    assert p.ahorro_cop == rutas["Lo justo hoy, el resto rindiendo"].cop_final - rutas["Todo hoy"].cop_final
+    assert p.ahorro_cop == Decimal(2612508 - 2605532)
+    assert rutas["Mitad y mitad"].valida is False
+
+
+def test_proponer_evalua_impuestos_primero_y_en_orden_de_fecha(politica):
+    p = _propuesta(politica)
+    primero = p.veredictos[0]
+    assert primero.operacion.categoria == "impuestos" and primero.operacion.monto == Decimal(150)
+    assert primero.estado == "auto"
+    fechas = [v.operacion.fecha_programada for v in p.veredictos]
+    assert fechas == sorted(fechas)
+    # Ninguna operación de la demo toca el colchón: 1.000 − 150 − 650 = 200
+    assert all(v.estado != "bloqueada" for v in p.veredictos)
 
 
 # --------------------------------------------------------------------------- explicador
