@@ -476,3 +476,38 @@ def test_si_la_ia_falla_devuelve_la_plantilla(monkeypatch):
     monkeypatch.setattr(explicador, "_pedir_a_ia", falla)
     p = fakes.cargar_propuesta_ejemplo()
     assert explicador.explicar(p) == explicador.plantilla(p)
+
+
+# --------------------------------------------------------------------------- backtest
+
+
+def _backtest(tasas, politica, meses=12):
+    from motor.backtest import backtest
+
+    return backtest(Decimal(1000), historico_sintetico(tasas, inicio=date(2026, 1, 1)), fakes.cargar_rendimiento_ejemplo(), politica, meses)
+
+
+def test_backtest_tendencia_plana_gana_b_por_el_rendimiento(politica):
+    r = _backtest([4000] * 360, politica)
+    assert r.meses_calculados == 12 and r.nota is None
+    assert r.victorias["Lo justo hoy, el resto rindiendo"] == 12
+    assert r.ahorro_promedio_cop > 0
+
+
+def test_backtest_tendencia_subiendo_nunca_gana_todo_hoy(politica):
+    r = _backtest([4000 + 3 * d for d in range(360)], politica)
+    assert r.victorias["Todo hoy"] == 0
+    assert all(m.ahorro_cop > 0 for m in r.meses)
+
+
+def test_backtest_tendencia_bajando_gana_todo_hoy(politica):
+    r = _backtest([4500 - 5 * d for d in range(360)], politica)
+    assert r.victorias["Todo hoy"] == 12
+    assert r.ahorro_promedio_cop == 0
+
+
+def test_backtest_historico_corto_usa_los_meses_que_alcanzan(politica):
+    r = _backtest([4000] * 100, politica)
+    assert r.meses_calculados == 3 and len(r.meses) == 3
+    assert "3 de 12" in r.nota
+    assert [m.desde for m in r.meses] == [date(2026, 1, 1), date(2026, 1, 31), date(2026, 3, 2)]
