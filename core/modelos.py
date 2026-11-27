@@ -105,6 +105,8 @@ class Ruta(_Base):
     descripcion: str
     operaciones: list[Operacion] = Field(default_factory=list)
     cop_final: Decimal
+    valida: bool = True
+    nota: str | None = None
 
 
 class Veredicto(_Base):
