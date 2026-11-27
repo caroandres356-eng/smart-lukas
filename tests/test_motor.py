@@ -3,12 +3,12 @@
 Quitar el @pytest.mark.skip de cada test a medida que se implemente.
 """
 
-from datetime import date
-from decimal import Decimal
+from datetime import date, timedelta
+from decimal import ROUND_HALF_UP, Decimal
 
 import pytest
 
-from core.modelos import CambioPolitica, Operacion
+from core.modelos import CambioPolitica, Cotizacion, Movimiento, Operacion
 from fakes import fakes
 
 PENDIENTE = pytest.mark.skip(reason="Persona 2: pendiente")
@@ -156,30 +156,134 @@ def test_operacion_pequena_es_auto(politica):
 # --------------------------------------------------------------------------- rutas y propuesta
 
 
-@PENDIENTE
-def test_calcular_rutas_con_fixtures(politica):
+def historico_sintetico(tasas, spread="0.01", inicio=HOY):
+    """Histórico con las tasas dadas, un día por elemento, empezando en `inicio`."""
+    return [
+        Cotizacion(desde="USD", hacia="COP", tasa=Decimal(t), spread=Decimal(spread), fecha=inicio + timedelta(days=i), fuente="simulado")
+        for i, t in enumerate(tasas)
+    ]
+
+
+def ingreso(monto="1000", fecha=HOY) -> Movimiento:
+    return Movimiento(fecha=fecha, tipo="ingreso", moneda="USD", monto=Decimal(monto))
+
+
+def rutas_por_nombre(rutas):
+    return {r.nombre: r for r in rutas}
+
+
+CONSTANTE = historico_sintetico([4000] * 30)
+SUBIENDO = historico_sintetico([4000 + 10 * d for d in range(30)])
+
+
+def test_reservas_y_disponible(politica):
+    from motor.rutas import calcular_reservas
+
+    r = calcular_reservas(ingreso(), politica)
+    assert (r.impuestos_usd, r.colchon_usd, r.disponible_usd) == (Decimal(150), Decimal(200), Decimal(650))
+
+
+def test_usd_para_el_arriendo_redondea_hacia_arriba(politica):
+    from motor.rutas import usd_para_gasto
+
+    arriendo = next(g for g in politica.gastos_fijos if g.nombre == "arriendo")
+    # 1.800.000 / (4.000 × 0,99) = 454,5454... -> 454,55
+    assert usd_para_gasto(arriendo, CONSTANTE[0]) == Decimal("454.55")
+
+
+def test_todo_hoy_con_tasa_constante_es_650_por_3960(politica):
     from motor.rutas import calcular_rutas
 
-    esperada = fakes.cargar_propuesta_ejemplo()
+    a = calcular_rutas(ingreso(), CONSTANTE, fakes.cargar_rendimiento_ejemplo(), politica)[0]
+    assert a.nombre == "Todo hoy"
+    assert a.cop_final == Decimal(650) * Decimal(3960)
+    assert [o.categoria for o in a.operaciones] == ["arriendo", "internet", "resto"]
+    assert sum(o.monto for o in a.operaciones) == Decimal(650)
+
+
+def test_mitad_y_mitad_es_invalida_por_el_arriendo(politica):
+    from motor.rutas import calcular_rutas
+
+    c = rutas_por_nombre(calcular_rutas(ingreso(), CONSTANTE, fakes.cargar_rendimiento_ejemplo(), politica))["Mitad y mitad"]
+    assert c.valida is False
+    # 325 USD × 3.960 = 1.287.000 COP; faltan 1.800.000 − 1.287.000 = 513.000
+    assert c.nota == "No alcanza para el arriendo del día 5: faltan 513.000 COP"
+
+
+def test_con_los_datos_de_la_demo_c_es_invalida_y_a_b_validas(politica):
+    from motor.rutas import calcular_rutas
+
+    rutas = rutas_por_nombre(
+        calcular_rutas(fakes.cargar_ingreso_ejemplo(), fakes.cargar_cotizaciones_ejemplo(), fakes.cargar_rendimiento_ejemplo(), politica)
+    )
+    assert rutas["Todo hoy"].valida and rutas["Lo justo hoy, el resto rindiendo"].valida
+    assert not rutas["Mitad y mitad"].valida and "arriendo" in rutas["Mitad y mitad"].nota
+
+
+def test_ruta_b_operaciones(politica):
+    from motor.rutas import calcular_rutas
+
+    b = calcular_rutas(ingreso(), CONSTANTE, fakes.cargar_rendimiento_ejemplo(), politica)[1]
+    ops = b.operaciones
+    assert [(o.desde, o.hacia, o.categoria) for o in ops[:3]] == [
+        ("USD", "COP", "arriendo"), ("USD", "COP", "internet"), ("USD", "USDT", "rendimiento")
+    ]
+    tramos = ops[3:]
+    assert [o.fecha_programada for o in tramos] == [HOY + timedelta(days=d) for d in (7, 14, 21, 28)]
+    assert all(o.desde == "USDT" and o.categoria == "escalonado" for o in tramos)
+    assert tramos[0].monto == tramos[1].monto == tramos[2].monto
+    assert tramos[3].monto > tramos[0].monto  # el último lleva el interés
+    assert sum(o.monto for o in tramos) > ops[2].monto
+
+
+def _ganancia_b_sobre_a(historico, politica):
+    from motor.rutas import calcular_rutas
+
+    rutas = rutas_por_nombre(calcular_rutas(ingreso(), historico, fakes.cargar_rendimiento_ejemplo(), politica))
+    return rutas["Lo justo hoy, el resto rindiendo"], rutas["Todo hoy"]
+
+
+def test_con_tasa_constante_b_gana_solo_por_el_rendimiento(politica):
+    b, a = _ganancia_b_sobre_a(CONSTANTE, politica)
+    usdt_entra = next(o.monto for o in b.operaciones if o.hacia == "USDT")
+    usdt_sale = sum(o.monto for o in b.operaciones if o.desde == "USDT")
+    interes = usdt_sale - usdt_entra
+    assert interes > 0
+    assert b.cop_final - a.cop_final == (interes * Decimal(3960)).quantize(Decimal(1))
+
+
+def test_con_tasa_subiendo_b_gana_por_mas(politica):
+    b_c, a_c = _ganancia_b_sobre_a(CONSTANTE, politica)
+    b_s, a_s = _ganancia_b_sobre_a(SUBIENDO, politica)
+    assert b_s.cop_final - a_s.cop_final > b_c.cop_final - a_c.cop_final > 0
+
+
+def test_calcular_rutas_con_fixtures(politica):
+    """A y C coinciden con fixtures/propuesta.json (±1 COP). B NO: el fixture usa otra regla
+    (USD enteros para los gastos y tramos saldo/restantes). B se verificó a mano: 2.612.508."""
+    from motor.rutas import calcular_rutas
+
+    esperada = rutas_por_nombre(fakes.cargar_propuesta_ejemplo().rutas)
     rutas = calcular_rutas(
         fakes.cargar_ingreso_ejemplo(), fakes.cargar_cotizaciones_ejemplo(), fakes.cargar_rendimiento_ejemplo(), politica
     )
     assert [r.nombre for r in rutas] == ["Todo hoy", "Lo justo hoy, el resto rindiendo", "Mitad y mitad"]
-    for calculada, fixture in zip(rutas, esperada.rutas):
-        assert abs(calculada.cop_final - fixture.cop_final) <= Decimal(1)
+    calc = rutas_por_nombre(rutas)
+    for nombre in ("Todo hoy", "Mitad y mitad"):
+        assert abs(calc[nombre].cop_final - esperada[nombre].cop_final) <= Decimal(1)
+    assert calc["Lo justo hoy, el resto rindiendo"].cop_final == Decimal(2612508)
 
 
-@PENDIENTE
 def test_todo_hoy_es_disponible_por_trm1_menos_spread(politica):
     from motor.rutas import calcular_rutas
 
     cots = fakes.cargar_cotizaciones_ejemplo()
     rutas = calcular_rutas(fakes.cargar_ingreso_ejemplo(), cots, fakes.cargar_rendimiento_ejemplo(), politica)
     disponible = Decimal(1000) - Decimal(150) - Decimal(200)
-    assert rutas[0].cop_final == (disponible * cots[0].tasa * (1 - cots[0].spread)).quantize(Decimal("0.01"))
+    esperado = (disponible * cots[0].tasa * (1 - cots[0].spread)).quantize(Decimal(1), rounding=ROUND_HALF_UP)
+    assert rutas[0].cop_final == esperado
 
 
-@PENDIENTE
 def test_ninguna_ruta_toca_reservas(politica):
     from motor.rutas import calcular_rutas
 
@@ -188,7 +292,8 @@ def test_ninguna_ruta_toca_reservas(politica):
     )
     for r in rutas:
         usd_que_sale = sum(o.monto for o in r.operaciones if o.desde == "USD")
-        assert usd_que_sale <= Decimal(650)
+        assert usd_que_sale == Decimal(650)  # todo el disponible, nada de las reservas
+        assert all(o.categoria != "impuestos" for o in r.operaciones)
 
 
 @PENDIENTE
