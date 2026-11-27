@@ -1,0 +1,15 @@
+# Política de Laura (caso de demo). Los campos coinciden con core.modelos.Politica.
+auto_max_usd_por_operacion: 300   # más de esto por operación pide aprobación
+auto_max_usd_por_dia: 500         # más de esto acumulado en el día pide aprobación
+impuestos_pct: 15                 # 15 % del ingreso se guarda en USDT para impuestos
+colchon_usd: 200                  # nunca se convierte; nada puede dejar el USD por debajo
+gastos_fijos:
+  - nombre: arriendo
+    monto_cop: 1800000
+    dia: 5
+  - nombre: internet
+    monto_cop: 120000
+    dia: 10
+vence_en_segundos: 60             # una solicitud sin respuesta en 60 s vence
+max_interrupciones_dia: 3         # máximo 3 solicitudes al día; el resto queda en cola
+reglas_aprendidas: []             # se llena con "Siempre en este rango" y "Nunca"

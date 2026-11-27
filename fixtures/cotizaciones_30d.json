@@ -1,0 +1,242 @@
+[
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4049.00",
+    "spread": "0.01",
+    "fecha": "2026-11-01",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4058.28",
+    "spread": "0.01",
+    "fecha": "2026-11-02",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4053.42",
+    "spread": "0.01",
+    "fecha": "2026-11-03",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4041.44",
+    "spread": "0.01",
+    "fecha": "2026-11-04",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4039.48",
+    "spread": "0.01",
+    "fecha": "2026-11-05",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4050.94",
+    "spread": "0.01",
+    "fecha": "2026-11-06",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4061.33",
+    "spread": "0.01",
+    "fecha": "2026-11-07",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4059.47",
+    "spread": "0.01",
+    "fecha": "2026-11-08",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4053.05",
+    "spread": "0.01",
+    "fecha": "2026-11-09",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4056.09",
+    "spread": "0.01",
+    "fecha": "2026-11-10",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4067.30",
+    "spread": "0.01",
+    "fecha": "2026-11-11",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4071.54",
+    "spread": "0.01",
+    "fecha": "2026-11-12",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4062.49",
+    "spread": "0.01",
+    "fecha": "2026-11-13",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4053.00",
+    "spread": "0.01",
+    "fecha": "2026-11-14",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4057.53",
+    "spread": "0.01",
+    "fecha": "2026-11-15",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4071.80",
+    "spread": "0.01",
+    "fecha": "2026-11-16",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4078.97",
+    "spread": "0.01",
+    "fecha": "2026-11-17",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4073.52",
+    "spread": "0.01",
+    "fecha": "2026-11-18",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4068.02",
+    "spread": "0.01",
+    "fecha": "2026-11-19",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4073.65",
+    "spread": "0.01",
+    "fecha": "2026-11-20",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4083.41",
+    "spread": "0.01",
+    "fecha": "2026-11-21",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4082.86",
+    "spread": "0.01",
+    "fecha": "2026-11-22",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4072.41",
+    "spread": "0.01",
+    "fecha": "2026-11-23",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4067.97",
+    "spread": "0.01",
+    "fecha": "2026-11-24",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4078.43",
+    "spread": "0.01",
+    "fecha": "2026-11-25",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4092.58",
+    "spread": "0.01",
+    "fecha": "2026-11-26",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4094.67",
+    "spread": "0.01",
+    "fecha": "2026-11-27",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4086.20",
+    "spread": "0.01",
+    "fecha": "2026-11-28",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4082.66",
+    "spread": "0.01",
+    "fecha": "2026-11-29",
+    "fuente": "simulado"
+  },
+  {
+    "desde": "USD",
+    "hacia": "COP",
+    "tasa": "4090.44",
+    "spread": "0.01",
+    "fecha": "2026-11-30",
+    "fuente": "simulado"
+  }
+]

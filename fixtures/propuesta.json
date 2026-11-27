@@ -1,0 +1,232 @@
+{
+  "id": "prop-laura-001",
+  "ingreso": {
+    "id": "ing-laura-001",
+    "fecha": "2026-11-01",
+    "tipo": "ingreso",
+    "moneda": "USD",
+    "monto": "1000.00",
+    "descripcion": "Pago cliente (diseño) - noviembre"
+  },
+  "rutas": [
+    {
+      "nombre": "Todo hoy",
+      "descripcion": "Convierte todo lo disponible el día 1.",
+      "operaciones": [
+        {
+          "id": "a-todo-01",
+          "tipo": "conversion",
+          "desde": "USD",
+          "hacia": "COP",
+          "monto": "650.00",
+          "categoria": "ahorro",
+          "fecha_programada": "2026-11-01"
+        }
+      ],
+      "cop_final": "2605531.50"
+    },
+    {
+      "nombre": "Lo justo hoy, el resto rindiendo",
+      "descripcion": "Convierte hoy solo lo de los gastos fijos; el resto queda en USDT rindiendo y se convierte en 4 tramos semanales.",
+      "operaciones": [
+        {
+          "id": "b-arriendo-01",
+          "tipo": "conversion",
+          "desde": "USD",
+          "hacia": "COP",
+          "monto": "450",
+          "categoria": "arriendo",
+          "fecha_programada": "2026-11-01"
+        },
+        {
+          "id": "b-internet-01",
+          "tipo": "conversion",
+          "desde": "USD",
+          "hacia": "COP",
+          "monto": "30",
+          "categoria": "internet",
+          "fecha_programada": "2026-11-01"
+        },
+        {
+          "id": "b-ahorro-01",
+          "tipo": "conversion",
+          "desde": "USD",
+          "hacia": "USDT",
+          "monto": "170.00",
+          "categoria": "ahorro",
+          "fecha_programada": "2026-11-01"
+        },
+        {
+          "id": "b-tramo-1",
+          "tipo": "conversion",
+          "desde": "USDT",
+          "hacia": "COP",
+          "monto": "42.58",
+          "categoria": "ahorro",
+          "fecha_programada": "2026-11-08"
+        },
+        {
+          "id": "b-tramo-2",
+          "tipo": "conversion",
+          "desde": "USDT",
+          "hacia": "COP",
+          "monto": "42.66",
+          "categoria": "ahorro",
+          "fecha_programada": "2026-11-15"
+        },
+        {
+          "id": "b-tramo-3",
+          "tipo": "conversion",
+          "desde": "USDT",
+          "hacia": "COP",
+          "monto": "42.75",
+          "categoria": "ahorro",
+          "fecha_programada": "2026-11-22"
+        },
+        {
+          "id": "b-tramo-4",
+          "tipo": "conversion",
+          "desde": "USDT",
+          "hacia": "COP",
+          "monto": "42.83",
+          "categoria": "ahorro",
+          "fecha_programada": "2026-11-29"
+        }
+      ],
+      "cop_final": "2612480.36"
+    },
+    {
+      "nombre": "Mitad y mitad",
+      "descripcion": "Convierte la mitad el día 1 y la otra mitad el día 15.",
+      "operaciones": [
+        {
+          "id": "c-mitad-01",
+          "tipo": "conversion",
+          "desde": "USD",
+          "hacia": "COP",
+          "monto": "325.00",
+          "categoria": "ahorro",
+          "fecha_programada": "2026-11-01"
+        },
+        {
+          "id": "c-mitad-15",
+          "tipo": "conversion",
+          "desde": "USD",
+          "hacia": "COP",
+          "monto": "325.00",
+          "categoria": "ahorro",
+          "fecha_programada": "2026-11-15"
+        }
+      ],
+      "cop_final": "2608276.03"
+    }
+  ],
+  "elegida": "Lo justo hoy, el resto rindiendo",
+  "veredictos": [
+    {
+      "operacion": {
+        "id": "r-impuestos-01",
+        "tipo": "conversion",
+        "desde": "USD",
+        "hacia": "USDT",
+        "monto": "150.00",
+        "categoria": "impuestos",
+        "fecha_programada": "2026-11-01"
+      },
+      "estado": "auto",
+      "motivo": "150 USD no supera el límite de 300 USD por operación; acumulado del día 150 de 500 USD. Reserva de impuestos (15 %)."
+    },
+    {
+      "operacion": {
+        "id": "b-arriendo-01",
+        "tipo": "conversion",
+        "desde": "USD",
+        "hacia": "COP",
+        "monto": "450",
+        "categoria": "arriendo",
+        "fecha_programada": "2026-11-01"
+      },
+      "estado": "requiere_aprobacion",
+      "motivo": "450 USD supera el límite de 300 USD por operación"
+    },
+    {
+      "operacion": {
+        "id": "b-internet-01",
+        "tipo": "conversion",
+        "desde": "USD",
+        "hacia": "COP",
+        "monto": "30",
+        "categoria": "internet",
+        "fecha_programada": "2026-11-01"
+      },
+      "estado": "auto",
+      "motivo": "30 USD no supera el límite de 300 USD por operación; acumulado del día 180.00 de 500 USD."
+    },
+    {
+      "operacion": {
+        "id": "b-ahorro-01",
+        "tipo": "conversion",
+        "desde": "USD",
+        "hacia": "USDT",
+        "monto": "170.00",
+        "categoria": "ahorro",
+        "fecha_programada": "2026-11-01"
+      },
+      "estado": "auto",
+      "motivo": "170.00 USD no supera el límite de 300 USD por operación; acumulado del día 350.00 de 500 USD."
+    },
+    {
+      "operacion": {
+        "id": "b-tramo-1",
+        "tipo": "conversion",
+        "desde": "USDT",
+        "hacia": "COP",
+        "monto": "42.58",
+        "categoria": "ahorro",
+        "fecha_programada": "2026-11-08"
+      },
+      "estado": "auto",
+      "motivo": "42.58 USDT no supera el límite de 300 USD por operación; tramo semanal programado para el 2026-11-08."
+    },
+    {
+      "operacion": {
+        "id": "b-tramo-2",
+        "tipo": "conversion",
+        "desde": "USDT",
+        "hacia": "COP",
+        "monto": "42.66",
+        "categoria": "ahorro",
+        "fecha_programada": "2026-11-15"
+      },
+      "estado": "auto",
+      "motivo": "42.66 USDT no supera el límite de 300 USD por operación; tramo semanal programado para el 2026-11-15."
+    },
+    {
+      "operacion": {
+        "id": "b-tramo-3",
+        "tipo": "conversion",
+        "desde": "USDT",
+        "hacia": "COP",
+        "monto": "42.75",
+        "categoria": "ahorro",
+        "fecha_programada": "2026-11-22"
+      },
+      "estado": "auto",
+      "motivo": "42.75 USDT no supera el límite de 300 USD por operación; tramo semanal programado para el 2026-11-22."
+    },
+    {
+      "operacion": {
+        "id": "b-tramo-4",
+        "tipo": "conversion",
+        "desde": "USDT",
+        "hacia": "COP",
+        "monto": "42.83",
+        "categoria": "ahorro",
+        "fecha_programada": "2026-11-29"
+      },
+      "estado": "auto",
+      "motivo": "42.83 USDT no supera el límite de 300 USD por operación; tramo semanal programado para el 2026-11-29."
+    }
+  ],
+  "ahorro_cop": "6948.86"
+}

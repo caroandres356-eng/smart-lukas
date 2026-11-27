@@ -1,0 +1,17 @@
+[
+  {
+    "moneda": "USD",
+    "monto": "1000.00",
+    "fuente": "simulado"
+  },
+  {
+    "moneda": "COP",
+    "monto": "0.00",
+    "fuente": "simulado"
+  },
+  {
+    "moneda": "USDT",
+    "monto": "0.00",
+    "fuente": "simulado"
+  }
+]

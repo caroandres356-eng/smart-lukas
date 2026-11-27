@@ -1,0 +1,50 @@
+[
+  {
+    "id": "sol-001",
+    "operacion": {
+      "id": "b-arriendo-01",
+      "tipo": "conversion",
+      "desde": "USD",
+      "hacia": "COP",
+      "monto": "450",
+      "categoria": "arriendo",
+      "fecha_programada": "2026-11-01"
+    },
+    "motivo": "450 USD supera el límite de 300 USD por operación",
+    "creada": "2026-11-01T13:00:00Z",
+    "vence": "2026-11-01T13:01:00Z",
+    "estado": "pendiente"
+  },
+  {
+    "id": "sol-002",
+    "operacion": {
+      "id": "x-viaje-01",
+      "tipo": "conversion",
+      "desde": "USD",
+      "hacia": "COP",
+      "monto": "320.00",
+      "categoria": "viaje",
+      "fecha_programada": "2026-11-01"
+    },
+    "motivo": "320 USD supera el límite de 300 USD por operación",
+    "creada": "2026-11-01T12:50:00Z",
+    "vence": "2026-11-01T12:51:00Z",
+    "estado": "vencida"
+  },
+  {
+    "id": "sol-003",
+    "operacion": {
+      "id": "x-equipo-01",
+      "tipo": "conversion",
+      "desde": "USD",
+      "hacia": "COP",
+      "monto": "120.00",
+      "categoria": "equipo",
+      "fecha_programada": "2026-11-01"
+    },
+    "motivo": "Acumulado del día 600 USD supera el límite de 500 USD por día",
+    "creada": "2026-11-01T13:00:05Z",
+    "vence": "2026-11-01T13:01:05Z",
+    "estado": "en_cola"
+  }
+]
