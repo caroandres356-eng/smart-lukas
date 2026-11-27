@@ -27,7 +27,6 @@ def conversion(monto, categoria="arriendo", desde="USD") -> Operacion:
 # --------------------------------------------------------------------------- política
 
 
-@PENDIENTE
 def test_cargar_politica_por_defecto():
     from motor.politica import cargar_politica
 
@@ -37,7 +36,6 @@ def test_cargar_politica_por_defecto():
     assert len(p.gastos_fijos) == 2
 
 
-@PENDIENTE
 def test_guardar_y_cargar_ida_y_vuelta(tmp_path, politica):
     from motor.politica import cargar_politica, guardar_politica
 
@@ -46,7 +44,6 @@ def test_guardar_y_cargar_ida_y_vuelta(tmp_path, politica):
     assert cargar_politica(ruta) == politica
 
 
-@PENDIENTE
 def test_aplicar_cambio_no_muta_la_original(politica):
     from motor.politica import aplicar_cambio
 
@@ -54,6 +51,37 @@ def test_aplicar_cambio_no_muta_la_original(politica):
     nueva = aplicar_cambio(politica, cambio)
     assert nueva.reglas_aprendidas == [cambio]
     assert politica.reglas_aprendidas == []
+
+
+def test_politica_con_impuestos_negativos_falla(tmp_path):
+    from motor.politica import PoliticaInvalida, cargar_politica
+
+    ruta = tmp_path / "mala.yaml"
+    texto = (fakes.RUTA_POLITICA).read_text(encoding="utf-8").replace("impuestos_pct: 15", "impuestos_pct: -5")
+    ruta.write_text(texto, encoding="utf-8")
+    with pytest.raises(PoliticaInvalida, match="impuestos_pct"):
+        cargar_politica(ruta)
+
+
+def test_politica_sin_un_campo_falla_con_mensaje_claro(tmp_path):
+    from motor.politica import PoliticaInvalida, cargar_politica
+
+    ruta = tmp_path / "incompleta.yaml"
+    lineas = fakes.RUTA_POLITICA.read_text(encoding="utf-8").splitlines()
+    ruta.write_text("\n".join(l for l in lineas if not l.startswith("colchon_usd")), encoding="utf-8")
+    with pytest.raises(PoliticaInvalida, match="falta el campo 'colchon_usd'"):
+        cargar_politica(ruta)
+
+
+def test_aplicar_cambio_dos_veces_misma_categoria_deja_una_regla(politica):
+    from motor.politica import aplicar_cambio
+
+    p = aplicar_cambio(politica, CambioPolitica(accion="permitir_hasta", tipo="conversion", categoria="arriendo", monto_max_usd=Decimal(500)))
+    p = aplicar_cambio(p, CambioPolitica(accion="permitir_hasta", tipo="conversion", categoria="arriendo", monto_max_usd=Decimal(600)))
+    p = aplicar_cambio(p, CambioPolitica(accion="bloquear", tipo="conversion", categoria="viaje"))
+    arriendo = [r for r in p.reglas_aprendidas if r.categoria == "arriendo"]
+    assert len(arriendo) == 1 and arriendo[0].monto_max_usd == 600
+    assert len(p.reglas_aprendidas) == 2
 
 
 # --------------------------------------------------------------------------- decisor (6 reglas)
