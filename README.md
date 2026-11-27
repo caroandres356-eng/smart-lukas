@@ -77,7 +77,7 @@ Paso a paso:
       ┌──────────────┬───────┴──────┬──────────────┬─────────────┐
       ▼              ▼              ▼              ▼             ▼
    fakes/      banco/simulado  banco/mercado  banco/belo_api  banco/belo_mcp
-  (fixtures)   (banco falso)   (TRM CSV)      (REST Belo)     (MCP Belo)
+  (fixtures)   (banco falso)   (Socrata/cache) (REST Belo)    (MCP Belo)
                                    │              │             │
                                    ▼              └──────┬──────┘
                            datos abiertos (TRM)        Belo
@@ -178,12 +178,13 @@ un aviso con el responsable en vez de romperse.
 
 ### Persona 1 · Banco y datos (`banco/`)
 
-- [ ] `reloj.py` · `RelojSimulado` con `hoy`, `ahora` (UTC), `avanzar`, `avanzar_segundos`.
-- [ ] `mercado.py` · `MercadoCSV.historico` lee `banco/datos/trm.csv` (TRM real) con fallback a fixtures.
-- [ ] `simulado.py` · `BancoSimulado`: los 5 métodos + `recibir_pago` + `aplicar_rendimiento_diario`, con la fórmula `COP = USD × TRM × (1 − spread)`.
-- [ ] `registro.py` · `Registro` SQLite con `guardar` y `ya_ejecutada`.
-- [ ] `fabrica.py` · rama `simulado` funcionando.
-- **Terminado cuando:** quitas el skip de `simulado` en `tests/test_contrato_banco.py` y pasa, y la app abre con `BANCO_MODO=simulado`.
+- [x] `reloj.py` · `RelojSimulado` con `hoy`, `ahora` (UTC), `avanzar`, `avanzar_segundos`.
+- [x] `mercado.py` · TRM vía Socrata, caché JSON y fallback a CSV/fixtures.
+- [x] `simulado.py` · `BancoSimulado`: los 5 métodos + `recibir_pago` + `aplicar_rendimiento_diario`, con la fórmula `COP = USD × TRM × (1 − spread)`.
+- [x] `registro.py` · `Registro` SQLite con `guardar` y `ya_ejecutada`.
+- [x] `fabrica.py` · rama `simulado` funcionando.
+- [x] Adaptadores Belo REST/MCP, mandatos AP2, cliente DeepSeek y corredor Auditor Rojo disponibles para pruebas sin credenciales.
+- **Verificación:** pruebas locales de Persona 1; los adaptadores externos se prueban con mocks, no contra servicios reales.
 
 ### Persona 2 · Motor (`motor/`)
 
@@ -203,9 +204,9 @@ un aviso con el responsable en vez de romperse.
 
 ## 11. Cómo conectar Belo cuando llegue el acceso
 
-1. Llenar `banco/belo_api.py` (REST) **o** `banco/belo_mcp.py` (MCP). Cada método tiene un comentario con la herramienta/endpoint que debe traducir.
-2. Poner las credenciales en `.env` y cambiar `BANCO_MODO=api` o `BANCO_MODO=mcp`; completar esa rama en `banco/fabrica.py`.
-3. Quitar el skip del adaptador en `tests/test_contrato_banco.py` y correr `pytest tests/test_contrato_banco.py`.
+1. Confirmar con Belo los endpoints REST o las herramientas MCP y sus formatos; los nombres y esquemas actuales son una base de integración, no una conexión validada con Belo.
+2. Poner las credenciales en `.env` y cambiar `BANCO_MODO=api` o `BANCO_MODO=mcp`.
+3. Validar cada conector con el entorno sandbox/documentación de Belo y correr sus pruebas de contrato.
 4. Si Belo tiene su propia aprobación de transacciones, `ejecutar()` la usa. **Nuestra bandeja decide cuándo pedir permiso; Belo ejecuta.**
 
 No hay que tocar `motor/`, `aprobaciones/` ni `ui/`.
@@ -213,7 +214,7 @@ No hay que tocar `motor/`, `aprobaciones/` ni `ui/`.
 ## 12. Datos
 
 - **Simulado:** el banco, los saldos, el spread (1 %), el rendimiento del USDT (10 % anual) y las cotizaciones de `fixtures/` (TRM sintética alrededor de 4.000).
-- **Real:** la TRM histórica de datos abiertos de Colombia (datos.gov.co), cuando se pone el CSV en `banco/datos/` (ver su README).
+- **Real:** la TRM se consulta en datos.gov.co mediante Socrata. `SOCRATA_APP_TOKEN` es opcional; si la API no está disponible, se prueban la caché JSON, el CSV local y finalmente los fixtures.
 - **No se usan datos reales de usuarios.** Laura es un caso inventado.
 
 ## 13. Equipo

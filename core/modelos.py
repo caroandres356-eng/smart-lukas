@@ -85,12 +85,16 @@ class Operacion(_Base):
     monto: Decimal = Field(gt=0)
     categoria: str = Field(description='"arriendo", "internet", "ahorro", "impuestos", ...')
     fecha_programada: date
+    mandato_id: Optional[str] = Field(default=None, description="Id del mandato AP2 asociado (opcional).")
+    mandato_firma: Optional[str] = Field(default=None, description="Firma criptográfica del mandato (opcional).")
 
 
 class Resultado(_Base):
     operacion_id: str
     ok: bool
     mensaje: str = ""
+    mandato_id: Optional[str] = Field(default=None, description="Id del mandato verificado al ejecutar (opcional).")
+    mandato_verificado: Optional[bool] = Field(default=None, description="Resultado de verificar el mandato AP2 (opcional).")
 
 
 # --------------------------------------------------------------------------- motor
@@ -136,6 +140,7 @@ class Solicitud(_Base):
     creada: datetime
     vence: datetime
     estado: Literal["pendiente", "en_cola", "aprobada", "rechazada", "vencida"]
+    mandato_id: Optional[str] = Field(default=None, description="Id del mandato AP2 emitido al aprobar (opcional).")
 
     @field_validator("creada", "vence")
     @classmethod

@@ -22,7 +22,6 @@ ADAPTADORES = [
     pytest.param(
         lambda: BancoSimulado(RelojSimulado(date(2026, 11, 1))),
         id="simulado",
-        marks=pytest.mark.skip(reason="Persona 1: pendiente BancoSimulado"),
     ),
     pytest.param(BeloApiBanco, id="belo_api", marks=pytest.mark.skip(reason="pendiente credenciales de Belo")),
     pytest.param(BeloMcpBanco, id="belo_mcp", marks=pytest.mark.skip(reason="pendiente credenciales de Belo")),

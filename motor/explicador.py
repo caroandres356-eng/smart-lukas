@@ -2,7 +2,8 @@
 
 Orden:
     1) Plantillas (siempre funcionan, sin internet). Es el modo por defecto: IA_PROVEEDOR=plantillas.
-    2) IA gratuita OPCIONAL (IA_PROVEEDOR + IA_API_KEY en el .env) solo para redactar más bonito.
+    2) IA OPCIONAL (ej. IA_PROVEEDOR=deepseek usando agente.deepseek_cliente.DeepSeekCliente + DEEPSEEK_API_KEY)
+       solo para redactar más bonito.
     3) Si la IA falla, tarda o devuelve algo raro -> se usa la plantilla.
 
 La IA NUNCA cambia montos: recibe los números ya calculados y formateados, y se valida

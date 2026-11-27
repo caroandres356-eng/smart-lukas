@@ -11,10 +11,13 @@ El resto del código solo llama a estas tres funciones; nunca importa un adaptad
 from __future__ import annotations
 
 import os
+from datetime import date
 
 from core.puertos import BancoPort, MercadoPort, Reloj
 
 MODOS = ("fakes", "simulado", "api", "mcp")
+_FECHA_INICIO_SIMULADO = date(2026, 11, 1)
+_SQLITE_POR_DEFECTO = "banco/datos/registro.sqlite"
 
 
 def modo_actual() -> str:
@@ -35,7 +38,10 @@ def obtener_reloj() -> Reloj:
         from fakes.fakes import RelojFalso
 
         return RelojFalso()
-    raise _pendiente(modo, "obtener_reloj")  # Persona 1: RelojSimulado(inicio=...) para los demás modos
+
+    from banco.reloj import RelojSimulado
+
+    return RelojSimulado(_FECHA_INICIO_SIMULADO)
 
 
 def obtener_mercado() -> MercadoPort:
@@ -44,7 +50,10 @@ def obtener_mercado() -> MercadoPort:
         from fakes.fakes import MercadoFalso
 
         return MercadoFalso()
-    raise _pendiente(modo, "obtener_mercado")  # Persona 1: MercadoCSV("banco/datos/trm.csv")
+
+    from banco.mercado import MercadoSocrata
+
+    return MercadoSocrata()
 
 
 def obtener_banco(reloj: Reloj | None = None) -> BancoPort:
@@ -53,4 +62,29 @@ def obtener_banco(reloj: Reloj | None = None) -> BancoPort:
         from fakes.fakes import BancoFalso
 
         return BancoFalso()
-    raise _pendiente(modo, "obtener_banco")  # Persona 1: BancoSimulado / BeloApiBanco / BeloMcpBanco
+
+    if modo == "simulado":
+        from banco.registro import Registro
+        from banco.simulado import BancoSimulado
+
+        ruta_sqlite = (os.getenv("BANCO_SQLITE_PATH") or _SQLITE_POR_DEFECTO).strip() or _SQLITE_POR_DEFECTO
+        return BancoSimulado(
+            reloj or obtener_reloj(),
+            mercado=obtener_mercado(),
+            registro=Registro(ruta_sqlite),
+        )
+
+    if modo == "api":
+        from banco.belo_api import BeloApiBanco
+
+        banco = BeloApiBanco()
+        if banco.esta_configurado():
+            return banco
+        raise _pendiente("api", "obtener_banco")
+
+    from banco.belo_mcp import BeloMcpBanco
+
+    banco = BeloMcpBanco()
+    if banco.esta_configurado():
+        return banco
+    raise _pendiente("mcp", "obtener_banco")

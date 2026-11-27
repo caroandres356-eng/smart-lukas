@@ -18,6 +18,8 @@ Notas:
   y las "en_cola" pueden promoverse a "pendiente" (con un nuevo `vence`).
 - La bandeja NO ejecuta operaciones ni modifica la política: devuelve el CambioPolitica
   y quien la usa llama a motor.politica.aplicar_cambio y a banco.ejecutar.
+- Nota (Idea 3 · AP2): al aprobar una solicitud, puede asociarse un mandato firmado
+  mediante `banco.mandatos` (llenando `Solicitud.mandato_id` / `Operacion.mandato_firma`).
 - Todo con el Reloj inyectado (nunca datetime.now()), para poder probar el vencimiento.
 """
 
