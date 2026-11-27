@@ -3,6 +3,7 @@
 Quitar el @pytest.mark.skip de cada test a medida que se implemente.
 """
 
+import re
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -401,8 +402,13 @@ def test_proponer_evalua_impuestos_primero_y_en_orden_de_fecha(politica):
 # --------------------------------------------------------------------------- explicador
 
 
-@PENDIENTE
-def test_explicar_dice_que_por_que_y_cuanto():
+@pytest.fixture
+def sin_ia(monkeypatch):
+    monkeypatch.delenv("IA_PROVEEDOR", raising=False)
+    monkeypatch.delenv("IA_API_KEY", raising=False)
+
+
+def test_explicar_dice_que_por_que_y_cuanto(sin_ia):
     from motor.explicador import explicar
 
     p = fakes.cargar_propuesta_ejemplo()
@@ -410,3 +416,63 @@ def test_explicar_dice_que_por_que_y_cuanto():
     assert isinstance(texto, str) and texto
     assert "6.949" in texto  # el ahorro, sin cambiar el monto
     assert "450" in texto  # la operación que necesita aprobación
+
+
+def test_explicar_propuesta_real_tiene_ingreso_ruta_y_ahorro(sin_ia, politica):
+    from motor.explicador import explicar
+
+    texto = explicar(_propuesta(politica))
+    assert "1.000 USD" in texto
+    assert "Lo justo hoy, el resto rindiendo" in texto
+    assert "6.976" in texto  # 2.612.508 − 2.605.532
+    assert "449,05" in texto and "300" in texto  # lo que necesita aprobación y por qué
+    assert "150 USD" in texto and "200 USD" in texto  # impuestos y colchón
+    frases = [f for f in re.split(r"(?<=[.!?])\s+", texto) if f]
+    assert 4 <= len(frases) <= 6
+
+
+def test_sin_llave_de_ia_devuelve_la_plantilla(monkeypatch):
+    from motor import explicador
+
+    monkeypatch.setenv("IA_PROVEEDOR", "gemini")
+    monkeypatch.delenv("IA_API_KEY", raising=False)
+    llamada = lambda *a: pytest.fail("no debe llamar a la IA sin llave")  # noqa: E731
+    monkeypatch.setattr(explicador, "_pedir_a_ia", llamada)
+    p = fakes.cargar_propuesta_ejemplo()
+    assert explicador.explicar(p) == explicador.plantilla(p)
+
+
+def test_ia_que_cambia_un_numero_se_descarta(monkeypatch):
+    from motor import explicador
+
+    monkeypatch.setenv("IA_PROVEEDOR", "groq")
+    monkeypatch.setenv("IA_API_KEY", "llave-de-prueba")
+    p = fakes.cargar_propuesta_ejemplo()
+    original = explicador.plantilla(p)
+    monkeypatch.setattr(explicador, "_pedir_a_ia", lambda *a: original.replace("6.949", "7.000"))
+    assert explicador.explicar(p) == original
+
+
+def test_ia_que_respeta_los_numeros_se_usa(monkeypatch):
+    from motor import explicador
+
+    monkeypatch.setenv("IA_PROVEEDOR", "gemini")
+    monkeypatch.setenv("IA_API_KEY", "llave-de-prueba")
+    p = fakes.cargar_propuesta_ejemplo()
+    original = explicador.plantilla(p)
+    monkeypatch.setattr(explicador, "_pedir_a_ia", lambda *a: "¡Hola! " + original)
+    assert explicador.explicar(p) == "¡Hola! " + original
+
+
+def test_si_la_ia_falla_devuelve_la_plantilla(monkeypatch):
+    from motor import explicador
+
+    monkeypatch.setenv("IA_PROVEEDOR", "gemini")
+    monkeypatch.setenv("IA_API_KEY", "llave-de-prueba")
+
+    def falla(*a):
+        raise TimeoutError("tardó más de 5 s")
+
+    monkeypatch.setattr(explicador, "_pedir_a_ia", falla)
+    p = fakes.cargar_propuesta_ejemplo()
+    assert explicador.explicar(p) == explicador.plantilla(p)
