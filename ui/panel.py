@@ -227,7 +227,7 @@ def render() -> None:
         izq, der = st.columns([3, 2], vertical_alignment="top")
         with izq:
             _titulo(f"Tu mes con el agente · {mes} {prop.ingreso.fecha.year}",
-                    f"Las {conteo['total']} operaciones del plan, en el día en que pasan. Pasa el mouse por cada una para ver el motivo.")
+                    f"Las {conteo['total']} operaciones del plan, en el día en que pasan. Pasa el cursor por una operación para ver su detalle.")
         with der:
             _html("<div class='sl-leyenda' style='justify-content:flex-end;margin-top:6px'>"
                   "<span><i style='background:#2e7d32'></i>Automática</span>"
@@ -243,7 +243,6 @@ def render() -> None:
             "luego, cada semana, sale un tramo del USDT a pesos.</div></div>"
         )
         _html(calendario.html_calendario(prop, pol, reloj.hoy()))
-        c.detalle_operaciones(prop, reloj.hoy(), clave="panel_detalle")
 
     from motor.explicador import explicar
 

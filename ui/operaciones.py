@@ -32,14 +32,13 @@ def render() -> None:
 
     with st.container(border=True, key="card_ops_cal"):
         c._html(f"<div class='sl-ct'><h2>Calendario del mes</h2><p>Hoy es {c.fecha_corta(hoy)} en la simulación. "
-                "Usa «+1 día» para ver cómo avanzan las operaciones.</p></div>")
+                "Pasa el cursor por una operación para ver su detalle; usa «+1 día» para ver cómo avanzan.</p></div>")
         c._html("<div class='sl-leyenda' style='margin-top:10px'>"
                 "<span><i style='background:#2e7d32'></i>Automática</span>"
                 "<span><i style='background:#fff;border:2.5px solid #c98a1b;box-sizing:border-box'></i>Requiere tu permiso</span>"
                 "<span><i style='background:#b3261e;border-radius:2px'></i>Bloqueada</span>"
                 "<span><i style='background:#f1f3f2;border:1px solid #c9d1cd;border-radius:3px'></i>Pago de un gasto fijo</span></div>")
         c._html(calendario.html_calendario(prop, pol, hoy))
-        c.detalle_operaciones(prop, hoy, clave="ops_detalle")
 
     with st.container(border=True, key="card_ops_lista"):
         c._html("<div class='sl-ct'><h2>Todas las operaciones, en orden</h2>"

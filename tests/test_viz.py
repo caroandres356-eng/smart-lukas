@@ -3,6 +3,7 @@
 import subprocess
 import sys
 from decimal import Decimal
+from html import escape
 
 import plotly.graph_objects as go
 import pytest
@@ -167,6 +168,10 @@ def test_calendario_una_ficha_por_operacion(propuesta_motor, politica):
 
     html = html_calendario(propuesta_motor, politica, propuesta_motor.ingreso.fecha)
     assert html.count("class='chip ") == len(propuesta_motor.veredictos)
+    # Cada operación trae su nube de detalle (tooltip) con la regla aplicada.
+    assert html.count("class='tip'") == len(propuesta_motor.veredictos)
+    for v in propuesta_motor.veredictos:
+        assert escape(v.motivo) in html
     assert html.count("class='evt'") == len(politica.gastos_fijos)
     conteo = resumen(propuesta_motor)
     assert conteo["auto"] + conteo["requiere_aprobacion"] + conteo["bloqueada"] == conteo["total"]

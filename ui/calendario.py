@@ -1,6 +1,7 @@
 """Calendario del mes con las operaciones del agente (Persona 3).
 
-Cada ficha es un veredicto de la propuesta (fecha, monto, de → a, estado y motivo en el tooltip).
+Cada ficha es un veredicto de la propuesta. Al pasar el cursor (o llegar con Tab) se abre una nube con
+el detalle: estado, momento según el reloj, monto, fecha y la regla aplicada (motivo del motor).
 Los días de pago de gastos fijos salen de la política. No se calcula nada: solo se ubica cada cosa en su día.
 """
 
@@ -22,6 +23,36 @@ NOMBRES = {
     "resto": "Resto a pesos",
     "mitad": "Mitad a pesos",
 }
+# estado -> (texto, clase de insignia); mismas clases que ui/componentes.py, sin importar Streamlit.
+INSIGNIA = {
+    "auto": ("● Automática", "ok"),
+    "requiere_aprobacion": ("◐ Requiere tu permiso", "warn"),
+    "bloqueada": ("✕ Bloqueada", "bad"),
+}
+CLASE_MOMENTO = {"hecha": "ok", "hoy": "ok", "prog": "neutral", "nohecha": "bad"}
+MESES_CORTOS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
+
+
+def _nube(v: Veredicto, texto: str, hoy: date) -> str:
+    """HTML de la nube de detalle (tooltip) de una operación."""
+    op = v.operacion
+    clave, cuando = momento(v, hoy)
+    etiqueta, clase = INSIGNIA[v.estado]
+    destino = f" → {op.hacia}" if op.hacia else ""
+    titulo = texto.split(" · espera")[0].split(" · bloqueada")[0]
+    accion = ""
+    if v.estado == "requiere_aprobacion" and clave != "nohecha":
+        accion = "<div class='ac'>Dale permiso en la Bandeja (menú de arriba)</div>"
+    return (
+        "<div class='tip' role='tooltip'>"
+        f"<div class='tt'>{escape(titulo)}</div>"
+        f"<div class='ps'><span class='sl-pill {clase}'>{etiqueta}</span>"
+        f"<span class='sl-pill {CLASE_MOMENTO[clave]}'>{escape(cuando)}</span></div>"
+        f"<div class='mv'>{fmt_usd(op.monto)} {op.desde}{destino}</div>"
+        f"<div class='fd'>{op.fecha_programada.day:02d} {MESES_CORTOS[op.fecha_programada.month - 1]} · {escape(op.categoria)}</div>"
+        f"<div class='rg'><b>Regla aplicada:</b> {escape(v.motivo)}</div>{accion}"
+        "<div class='sm'>Simulación: el agente aún no ejecuta operaciones en el banco.</div></div>"
+    )
 
 
 def _texto(v: Veredicto, tramo: int | None, total_tramos: int) -> str:
@@ -53,16 +84,6 @@ def momento(v: Veredicto, hoy: date) -> tuple[str, str]:
     if v.estado == "requiere_aprobacion":
         return "nohecha", "No se ejecutó · sin permiso"
     return "nohecha", "No se ejecuta"
-
-
-def titulo_operacion(v: Veredicto, propuesta: Propuesta) -> str:
-    """"01 nov · Arriendo · 449,05 USD → COP" (para el selector de detalle)."""
-    tramos = sorted(x.operacion.fecha_programada for x in propuesta.veredictos if x.operacion.categoria == "escalonado")
-    numero = {f: i + 1 for i, f in enumerate(tramos)}
-    op = v.operacion
-    base = _texto(v, numero.get(op.fecha_programada), len(tramos)).split(" · espera")[0].split(" · bloqueada")[0]
-    meses = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
-    return f"{op.fecha_programada.day:02d} {meses[op.fecha_programada.month - 1]} · {base} · {fmt_usd(op.monto)} {op.desde} → {op.hacia or ''}"
 
 
 def resumen(propuesta: Propuesta) -> dict[str, int]:
@@ -114,10 +135,12 @@ def html_calendario(propuesta: Propuesta, politica: Politica, hoy: date) -> str:
                 op = v.operacion
                 texto = _texto(v, numero_tramo.get(op.fecha_programada), len(tramos))
                 clave, cuando = momento(v, hoy)
+                # En los últimos días de la semana la nube se abre hacia la izquierda para no salirse de la pantalla.
+                lado = " der" if dia.weekday() >= 4 else ""
                 fichas.append(
-                    f"<div class='chip {CLASE[v.estado]} m-{clave}' title='{escape(v.motivo, quote=True)}'><i class='dot'></i>"
+                    f"<div class='chip {CLASE[v.estado]} m-{clave}{lado}' tabindex='0'><i class='dot'></i>"
                     f"<div><b>{fmt_usd(op.monto)} {op.desde} → {op.hacia or ''}</b><span>{escape(texto)}</span>"
-                    f"<em>{escape(cuando)}</em></div></div>"
+                    f"<em>{escape(cuando)}</em></div>{_nube(v, texto, hoy)}</div>"
                 )
             partes.append(f"<div class='{clases}'>{cab}{''.join(fichas)}{''.join(gastos.get(dia, []))}</div>")
         dia += timedelta(days=1)

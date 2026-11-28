@@ -113,9 +113,36 @@ CSS = """
 .sl-cal .chip.bad { background:var(--sl-rojo-suave); } .sl-cal .chip.bad .dot { background:var(--sl-rojo); border-radius:2px; }
 .sl-cal .chip em { display:block; font-style:normal; font-size:.62rem; font-weight:700; text-transform:uppercase;
   letter-spacing:.05em; margin-top:3px; color:var(--sl-tinta-2); }
-.sl-cal .chip.m-hecha { opacity:.78; } .sl-cal .chip.m-hecha em { color:#1f5f24; } .sl-cal .chip.m-hecha em::before { content:"✓ "; }
+.sl-cal .chip.m-hecha > .dot, .sl-cal .chip.m-hecha > div:not(.tip) { opacity:.75; }
+.sl-cal .chip.m-hecha em { color:#1f5f24; } .sl-cal .chip.m-hecha em::before { content:"✓ "; }
 .sl-cal .chip.m-hoy em { display:none; }
-.sl-cal .chip.m-nohecha { opacity:.85; } .sl-cal .chip.m-nohecha b { text-decoration:line-through; } .sl-cal .chip.m-nohecha em { color:var(--sl-rojo); }
+.sl-cal .chip.m-nohecha > .dot, .sl-cal .chip.m-nohecha > div:not(.tip) { opacity:.85; }
+.sl-cal .chip.m-nohecha > div:not(.tip) > b { text-decoration:line-through; } .sl-cal .chip.m-nohecha em { color:var(--sl-rojo); }
+
+/* Nube de detalle (tooltip) de cada operación: aparece con el cursor o con Tab */
+.sl-cal .chip { position:relative; outline-offset:2px; }
+.sl-cal .chip:hover, .sl-cal .chip:focus-visible { box-shadow:0 0 0 2px rgba(46,125,50,.35); z-index:30; }
+.sl-cal .chip .tip { display:none; position:absolute; z-index:60; top:calc(100% + 10px); left:-4px; width:290px;
+  background:#17201b; color:#e7ece9; border-radius:12px; padding:13px 15px; box-shadow:0 12px 32px rgba(0,0,0,.28);
+  font-size:.8rem; line-height:1.45; cursor:default; text-align:left; }
+.sl-cal .chip.der .tip { left:auto; right:-4px; }
+.sl-cal .chip .tip::before { content:""; position:absolute; top:-6px; left:18px; width:12px; height:12px; background:#17201b; transform:rotate(45deg); }
+.sl-cal .chip.der .tip::before { left:auto; right:18px; }
+.sl-cal .chip:hover .tip, .sl-cal .chip:focus-within .tip { display:block; }
+.sl-cal .chip .tip .tt { font-weight:700; font-size:.86rem; color:#fff; }
+.sl-cal .chip .tip .ps { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+.sl-cal .chip .tip .ps .sl-pill { color:inherit; }
+.sl-cal .chip .tip .ps .ok { background:#24452a; color:#9fd8a6; }
+.sl-cal .chip .tip .ps .warn { background:#4a3511; color:#f3c770; }
+.sl-cal .chip .tip .ps .bad { background:#4d1f1c; color:#f2a19b; }
+.sl-cal .chip .tip .ps .neutral { background:#2c3530; color:#c9d1cd; }
+.sl-cal .chip .tip .mv { font-size:1.2rem; font-weight:800; color:#fff; letter-spacing:-.01em; }
+.sl-cal .chip .tip .fd { color:#aab5af; font-size:.76rem; margin-top:2px; }
+.sl-cal .chip .tip .rg { background:rgba(255,255,255,.07); border-radius:9px; padding:8px 10px; margin-top:9px; color:#e7ece9; }
+.sl-cal .chip .tip .rg b { color:#fff; display:inline; }
+.sl-cal .chip .tip .ac { margin-top:8px; color:#f3c770; font-weight:700; }
+.sl-cal .chip .tip .sm { margin-top:8px; color:#8f9b95; font-size:.7rem; }
+@media (min-width: 1000px) { .sl-cal-wrap { overflow:visible; } }
 .sl-cal .evt { font-size:.74rem; line-height:1.35; color:#33403a; background:#f1f3f2; border:1px solid #dfe5e1; border-radius:9px; padding:6px 8px; }
 .sl-cal .evt b { display:block; font-size:.8rem; color:var(--sl-tinta); white-space:nowrap; }
 .sl-cal .evt span { display:block; color:var(--sl-tinta-2); font-size:.7rem; }
@@ -289,39 +316,6 @@ def echarts(opciones: dict, alto: int = 360, clave: str | None = None) -> None:
     from streamlit_echarts import st_echarts
 
     st_echarts(options=opciones, height=f"{alto}px", key=clave)
-
-
-def detalle_operaciones(propuesta, hoy: date, clave: str) -> None:
-    """Selector de operación (st.pills) + tarjeta con su detalle: el calendario se vuelve interactivo.
-
-    No ejecuta nada: muestra qué hará el agente, por qué (motivo del motor) y en qué momento está según el reloj.
-    """
-    from ui import calendario
-
-    # La opción es el título de la operación (no su posición): si el reloj avanza y la lista se reordena,
-    # la selección sigue apuntando a la misma operación.
-    por_titulo = {calendario.titulo_operacion(v, propuesta): v for v in propuesta.veredictos}
-    elegido = st.pills("Ver el detalle de una operación", list(por_titulo), selection_mode="single", key=clave)
-    if elegido is None or elegido not in por_titulo:
-        st.caption("Elige una operación para ver qué regla aplicó el agente y en qué momento está.")
-        return
-    v = por_titulo[elegido]
-    op = v.operacion
-    clave_m, cuando = calendario.momento(v, hoy)
-    clase_m = {"hecha": "ok", "hoy": "ok", "prog": "neutral", "nohecha": "bad"}[clave_m]
-    destino = f" → {op.hacia}" if op.hacia else ""
-    _html(
-        "<div class='sl-card' style='margin-top:8px'>"
-        f"<div class='top'><div class='k'>{escape(calendario.titulo_operacion(v, propuesta).split(' · ')[1])}</div>"
-        f"<div style='display:flex;gap:6px;flex-wrap:wrap'>{insignia_estado(v.estado)}{pill(cuando, clase_m)}</div></div>"
-        f"<div class='v'>{fmt_usd(op.monto)} {op.desde}{destino}</div>"
-        f"<div class='d'>{fecha_corta(op.fecha_programada)} · {escape(op.categoria)}</div>"
-        f"<div style='background:#f7f9f8;border:1px solid #e2e8e4;border-radius:12px;padding:11px 13px;margin-top:12px;"
-        f"font-size:.9rem;line-height:1.5;color:#33403a'><b>Regla aplicada:</b> {escape(v.motivo)}</div>"
-        "<div class='d' style='font-size:.78rem'>Simulación: el agente aún no ejecuta operaciones en el banco.</div></div>"
-    )
-    if v.estado == "requiere_aprobacion" and clave_m != "nohecha" and "bandeja" in st.session_state.get("paginas", {}):
-        st.page_link(st.session_state["paginas"]["bandeja"], label="Ir a la Bandeja para darle permiso", icon=":material/inbox:")
 
 
 def seccion(titulo: str) -> None:
