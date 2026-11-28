@@ -1,14 +1,17 @@
 """Pantalla: Rutas. Las 3 formas de convertir lo disponible, cuánto deja cada una y por qué gana la elegida."""
 
+from decimal import Decimal
 from html import escape
 
 import streamlit as st
 
+from analisis.escenarios import escenarios, punto_equilibrio
 from motor.rutas import RUTA_A
 from ui import componentes as c
 from ui import estado
 from ui.panel import al_cierre
 from viz.estilo import CONFIG, LETRAS, color_ruta
+from viz.escenarios import grafica_escenarios
 from viz.evolucion_echarts import opciones_evolucion
 from viz.rutas import grafica_rutas
 
@@ -39,6 +42,29 @@ def _tarjeta_ruta(prop, ruta, todo_hoy) -> str:
     )
 
 
+def _escenarios_dolar(prop, pol, historico) -> None:
+    """¿Y si el dólar cambia? El usuario elige cuánto se mueve; el motor recalcula las rutas en cada escenario."""
+    with st.container(border=True, key="card_rutas_escenarios"):
+        c._html("<div class='sl-ct'><h2>¿Y si el dólar cambia durante el mes?</h2>"
+                "<p>Mueve el control: el dólar sube o baja poco a poco hasta ese porcentaje el último día. "
+                "Lo calcula el mismo motor con un histórico hipotético; es un escenario, no una promesa.</p></div>")
+        variacion = st.slider("¿Cuánto se mueve el dólar en el mes?", min_value=0.5, max_value=10.0, value=3.0,
+                              step=0.5, format="%.1f %%", key="rutas_variacion_dolar")
+        rendimiento = st.session_state["banco"].rendimiento("USDT")
+        escs = escenarios(prop.ingreso, historico, rendimiento, pol, Decimal(str(variacion)))
+        equilibrio = punto_equilibrio(prop.ingreso, historico, rendimiento, pol, prop.elegida)
+        st.plotly_chart(grafica_escenarios(escs, prop.elegida, equilibrio), width="stretch", config=CONFIG)
+        letra = LETRAS.get(prop.elegida, "")
+        if equilibrio is not None:
+            c._html(
+                "<div class='sl-stats' style='margin-top:4px'><div class='warn'><div class='n'>"
+                f"{str(equilibrio).replace('.', ',')} %</div><div class='t'>punto de equilibrio</div></div>"
+                f"<div class='txt'>Si el dólar baja más de {str(equilibrio).replace('.', ',')} % de aquí a fin de mes, "
+                f"habría sido mejor convertir todo hoy. Ese es el riesgo de esperar con la ruta {letra}; "
+                "a cambio, si el dólar se mantiene o sube, terminas con más pesos.</div></div>"
+            )
+
+
 def render() -> None:
     c.encabezado("Rutas", "Tres formas de convertir lo disponible. El agente elige la que deja más pesos y cubre tus gastos a tiempo.",
                  simulado=estado.fuente_actual() == "simulado")
@@ -63,6 +89,8 @@ def render() -> None:
 
     with st.container(border=True, key="card_rutas_comp"):
         st.plotly_chart(grafica_rutas(prop), width="stretch", config=CONFIG)
+
+    _escenarios_dolar(prop, pol, historico)
 
     c.seccion("Operaciones de cada ruta")
     for ruta in prop.rutas:
