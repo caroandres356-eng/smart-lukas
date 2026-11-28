@@ -1,0 +1,14 @@
+# Tema de Smart Lukas (Persona 3): fintech claro y limpio.
+[theme]
+base = "light"
+primaryColor = "#2e7d32"
+backgroundColor = "#f5f7f6"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#1b1f1d"
+font = "sans-serif"
+baseRadius = "10px"
+borderColor = "#e3e8e5"
+showSidebarBorder = true
+
+[client]
+toolbarMode = "minimal"

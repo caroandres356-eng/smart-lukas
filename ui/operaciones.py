@@ -2,37 +2,48 @@
 
 import streamlit as st
 
+from ui import componentes as c
 from ui import estado
 
-ICONOS = {"auto": "🟢 auto", "requiere_aprobacion": "🟡 requiere aprobación", "bloqueada": "🔴 bloqueada"}
+TIPOS_MOVIMIENTO = {"ingreso": "Ingreso", "conversion": "Conversión", "pago": "Pago", "rendimiento": "Rendimiento"}
 
 
 def render() -> None:
-    st.title("⚙️ Operaciones")
-    estado.etiqueta_fuente(estado.fuente_actual())
+    c.encabezado("Operaciones", "Cada operación de la ruta elegida pasa por tus reglas, siempre con un motivo.",
+                 simulado=estado.fuente_actual() == "simulado")
     prop = estado.propuesta()
 
-    st.subheader(f"Ruta elegida: {prop.elegida}")
-    st.dataframe(
-        [
-            {
-                "Estado": ICONOS[v.estado],
-                "Fecha": v.operacion.fecha_programada,
-                "De→A": f"{v.operacion.desde}→{v.operacion.hacia}",
-                "Monto": f"{v.operacion.monto}",
-                "Categoría": v.operacion.categoria,
-                "Motivo": v.motivo,
-            }
-            for v in prop.veredictos
-        ],
-        hide_index=True,
-        width="stretch",
-    )
+    conteo = {e: sum(1 for v in prop.veredictos if v.estado == e) for e in ("auto", "requiere_aprobacion", "bloqueada")}
+    cols = st.columns(3)
+    with cols[0]:
+        c.tarjeta("Automáticas", str(conteo["auto"]), "Dentro de tus límites", insignia=c.insignia_estado("auto"))
+    with cols[1]:
+        c.tarjeta("Requieren aprobación", str(conteo["requiere_aprobacion"]), "Van a tu bandeja",
+                  resaltada=conteo["requiere_aprobacion"] > 0, insignia=c.insignia_estado("requiere_aprobacion"))
+    with cols[2]:
+        c.tarjeta("Bloqueadas", str(conteo["bloqueada"]), "No se ejecutan", insignia=c.insignia_estado("bloqueada"))
 
-    st.subheader("Movimientos del banco")
-    st.dataframe(
-        [m.model_dump(mode="json") for m in st.session_state["banco"].movimientos()],
-        hide_index=True,
-        width="stretch",
-    )
-    estado.pendiente_diseno()
+    c.seccion(f"Plan de la ruta «{prop.elegida}»")
+    for v in prop.veredictos:
+        op = v.operacion
+        c.fila(
+            f"{c.monto_op(op)} · {op.categoria.capitalize()}",
+            v.motivo,
+            c.fecha_corta(op.fecha_programada),
+            insignia=c.insignia_estado(v.estado),
+        )
+
+    with st.expander("Movimientos del banco"):
+        st.dataframe(
+            [
+                {
+                    "Fecha": c.fecha_corta(m.fecha),
+                    "Tipo": TIPOS_MOVIMIENTO.get(m.tipo, m.tipo),
+                    "Monto": c.pesos(m.monto) if m.moneda == "COP" else c.dolares(m.monto, m.moneda),
+                    "Descripción": m.descripcion,
+                }
+                for m in st.session_state["banco"].movimientos()
+            ],
+            hide_index=True,
+            width="stretch",
+        )

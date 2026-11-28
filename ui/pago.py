@@ -1,37 +1,50 @@
 """Pantalla 1: Llega el pago."""
 
+from html import escape
+
 import streamlit as st
 
 from fakes import fakes
+from ui import componentes as c
 from ui import estado
+from viz.estilo import CONFIG
+from viz.reparto import grafica_reparto
 
 
 def render() -> None:
-    st.title("💵 Llega el pago")
     s = st.session_state
     banco = s["banco"]
-    estado.etiqueta_fuente(estado.fuente_actual())
+    c.encabezado("Llega el pago", "Antes de convertir nada, el agente aparta lo que no se toca.",
+                 simulado=estado.fuente_actual() == "simulado")
 
     ingresos = [m for m in banco.movimientos() if m.tipo == "ingreso"]
     ingreso = ingresos[-1] if ingresos else fakes.cargar_ingreso_ejemplo()
-    st.success(f"Llegó un pago de **{estado.fmt_usd(ingreso.monto, ingreso.moneda)}** el {ingreso.fecha:%d/%m/%Y}: {ingreso.descripcion}")
-
-    st.subheader("Saldos")
-    cols = st.columns(3)
-    for col, saldo in zip(cols, banco.saldos()):
-        valor = estado.fmt_cop(saldo.monto) if saldo.moneda == "COP" else estado.fmt_usd(saldo.monto, saldo.moneda)
-        col.metric(saldo.moneda, valor)
+    c.cifra_principal(
+        "Llegó un pago",
+        c.dolares(ingreso.monto, ingreso.moneda),
+        f"{ingreso.fecha:%d/%m/%Y} · {escape(ingreso.descripcion)}",
+    )
 
     cot = banco.cotizacion("USD", "COP")
     rend = banco.rendimiento("USDT")
-    c1, c2 = st.columns(2)
-    c1.metric("TRM hoy (USD→COP)", estado.fmt_cop(cot.tasa), help=f"Spread de Belo: {cot.spread * 100:.0f} %")
-    c2.metric("Rendimiento USDT", f"{rend.tasa_anual * 100:.0f} % anual")
+    c.chips([
+        ("TRM hoy", c.pesos(cot.tasa)),
+        ("Spread de Belo", f"{cot.spread * 100:.0f} %"),
+        ("Rendimiento USDT", f"{rend.tasa_anual * 100:.0f} % anual"),
+    ])
+
+    c.seccion("Tus saldos")
+    cols = st.columns(3)
+    for col, saldo in zip(cols, banco.saldos()):
+        valor = c.pesos(saldo.monto) if saldo.moneda == "COP" else c.dolares(saldo.monto, saldo.moneda)
+        with col:
+            c.tarjeta(saldo.moneda, valor)
 
     pol = estado.politica()
-    st.subheader("Qué se separa antes de decidir")
-    st.write(
-        f"- Impuestos: **{pol.impuestos_pct} %** del ingreso se guarda en USDT\n"
-        f"- Colchón: **{estado.fmt_usd(pol.colchon_usd)}** que nunca se convierte"
-    )
-    estado.pendiente_diseno()
+    c.seccion("Qué se separa antes de decidir")
+    with st.container(border=True):
+        st.plotly_chart(grafica_reparto(ingreso, pol), width="stretch", config=CONFIG)
+        st.caption(
+            f"Impuestos: el {pol.impuestos_pct} % se guarda en USDT. "
+            f"Colchón: {c.dolares(pol.colchon_usd)} que nunca se convierten. El resto lo comparan las 3 rutas."
+        )

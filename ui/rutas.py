@@ -1,54 +1,55 @@
 """Pantalla 2: Rutas (comparación A / B / C)."""
 
-import plotly.graph_objects as go
+from html import escape
+
 import streamlit as st
 
+from motor.rutas import RUTA_A
+from ui import componentes as c
 from ui import estado
+from viz.estilo import CONFIG, LETRAS
+from viz.rutas import grafica_rutas
 
 
 def render() -> None:
-    st.title("🧭 Rutas")
-    estado.etiqueta_fuente(estado.fuente_actual())
+    c.encabezado("Rutas", "Tres formas de convertir lo disponible. El agente elige la que deja más pesos y cumple tus reglas.",
+                 simulado=estado.fuente_actual() == "simulado")
     prop = estado.propuesta()
+    todo_hoy = next((r for r in prop.rutas if r.nombre == RUTA_A), None)
 
-    st.dataframe(
-        [
-            {
-                "Ruta": r.nombre + (" ✅" if r.nombre == prop.elegida else ""),
-                "Pesos finales": estado.fmt_cop(r.cop_final),
-                "Operaciones": len(r.operaciones),
-                "Descripción": r.descripcion,
-            }
-            for r in prop.rutas
-        ],
-        hide_index=True,
-        width="stretch",
-    )
+    cols = st.columns(len(prop.rutas))
+    for col, ruta in zip(cols, prop.rutas):
+        es_elegida = ruta.nombre == prop.elegida
+        if es_elegida:
+            insignia = c.pill("✓ Elegida", "ok")
+        elif not ruta.valida:
+            insignia = c.pill("✕ No cubre gastos", "bad")
+        else:
+            insignia = ""
+        if todo_hoy is None or ruta.nombre == RUTA_A:
+            frente = "Punto de comparación"
+        else:
+            diferencia = prop.ahorro_cop if es_elegida else ruta.cop_final - todo_hoy.cop_final
+            frente = f"<b>{c.pesos_con_signo(diferencia)}</b> frente a «Todo hoy»"
+        detalle = f"{frente}<br>{len(ruta.operaciones)} operaciones · {escape(ruta.descripcion)}"
+        if ruta.nota:
+            detalle += f"<br><i>{escape(ruta.nota)}</i>"
+        with col:
+            c.tarjeta(f"Ruta {LETRAS.get(ruta.nombre, '')} · {ruta.nombre}", c.pesos(ruta.cop_final), detalle,
+                      resaltada=es_elegida, insignia=insignia)
 
-    fig = go.Figure(
-        go.Bar(
-            x=[r.nombre for r in prop.rutas],
-            y=[float(r.cop_final) for r in prop.rutas],
-            marker_color=["#2e7d32" if r.nombre == prop.elegida else "#9e9e9e" for r in prop.rutas],
-            text=[estado.fmt_cop(r.cop_final) for r in prop.rutas],
-            textposition="outside",
-        )
-    )
-    minimo = min(float(r.cop_final) for r in prop.rutas)
-    fig.update_layout(yaxis_title="COP", yaxis_range=[minimo * 0.995, None], height=360, margin=dict(t=20))
-    st.plotly_chart(fig, width="stretch")
+    with st.container(border=True):
+        st.plotly_chart(grafica_rutas(prop), width="stretch", config=CONFIG)
 
-    st.metric("Elegida", prop.elegida, delta=f"{estado.fmt_cop(prop.ahorro_cop)} vs. Todo hoy")
-
-    for r in prop.rutas:
-        with st.expander(f"Operaciones de «{r.nombre}»"):
+    c.seccion("Operaciones de cada ruta")
+    for ruta in prop.rutas:
+        marca = " ✓" if ruta.nombre == prop.elegida else ""
+        with st.expander(f"Ruta {LETRAS.get(ruta.nombre, '')} · {ruta.nombre}{marca}", expanded=ruta.nombre == prop.elegida):
             st.dataframe(
                 [
-                    {"Fecha": o.fecha_programada, "Tipo": o.tipo, "De→A": f"{o.desde}→{o.hacia}",
-                     "Monto": f"{o.monto}", "Categoría": o.categoria}
-                    for o in r.operaciones
+                    {"Fecha": c.fecha_corta(o.fecha_programada), "Operación": c.monto_op(o), "Para": o.categoria.capitalize()}
+                    for o in ruta.operaciones
                 ],
                 hide_index=True,
                 width="stretch",
             )
-    estado.pendiente_diseno()
