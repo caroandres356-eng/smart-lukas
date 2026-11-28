@@ -1,14 +1,17 @@
-# Tema de Smart Lukas (Persona 3): fintech claro y limpio.
+# Tema de Smart Lukas (Persona 3): fintech claro y limpio, igual que la maqueta del Panel.
 [theme]
 base = "light"
 primaryColor = "#2e7d32"
-backgroundColor = "#f5f7f6"
+backgroundColor = "#f4f6f5"
 secondaryBackgroundColor = "#ffffff"
-textColor = "#1b1f1d"
-font = "sans-serif"
-baseRadius = "10px"
-borderColor = "#e3e8e5"
+textColor = "#17201b"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap, sans-serif"
+headingFont = "Space Grotesk:https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap, Inter, sans-serif"
+baseRadius = "12px"
+borderColor = "#e2e8e4"
 showSidebarBorder = true
+# Colores por ruta (B elegida, A, C), validados para daltonismo.
+chartCategoricalColors = ["#2e7d32", "#3b6fd8", "#e0558f"]
 
 [client]
 toolbarMode = "minimal"

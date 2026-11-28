@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="40" viewBox="0 0 200 40">
+  <rect x="2" y="3" width="34" height="34" rx="10" fill="#2e7d32"/>
+  <path d="M10 26l6-6 5 5 8-9" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M24 16h5v5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="46" y="27" font-family="Space Grotesk, Inter, Segoe UI, sans-serif" font-size="20" font-weight="700" fill="#17201b" letter-spacing="-0.4">Smart Lukas</text>
+</svg>

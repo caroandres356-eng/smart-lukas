@@ -183,6 +183,17 @@ def fila(principal: str, secundario: str, derecha: str, insignia: str = "") -> N
     )
 
 
+def echarts(opciones: dict, alto: int = 360, clave: str | None = None) -> None:
+    """Dibuja una gráfica de ECharts (opciones armadas en viz/).
+
+    El import va aquí adentro: streamlit_echarts solo funciona dentro de `streamlit run`
+    (fuera de la app, por ejemplo en pytest, falla al importarse).
+    """
+    from streamlit_echarts import st_echarts
+
+    st_echarts(options=opciones, height=f"{alto}px", key=clave)
+
+
 def seccion(titulo: str) -> None:
     _html(f'<div class="sl-section">{escape(titulo)}</div>')
 
