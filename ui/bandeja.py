@@ -47,7 +47,7 @@ def render() -> None:
         op = sol.operacion
         quedan = max(int((sol.vence - reloj.ahora()).total_seconds()), 0)
         total = max(pol.vence_en_segundos, 1)
-        with st.container(border=True):
+        with st.container(border=True, key=f"card_bandeja_{sol.id}"):
             izq, der = st.columns([3, 1])
             with izq:
                 st.markdown(

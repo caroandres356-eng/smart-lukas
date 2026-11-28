@@ -1,4 +1,4 @@
-"""Pantalla 2: Rutas (comparación A / B / C)."""
+"""Pantalla: Rutas. Las 3 formas de convertir lo disponible, cuánto deja cada una y por qué gana la elegida."""
 
 from html import escape
 
@@ -7,43 +7,66 @@ import streamlit as st
 from motor.rutas import RUTA_A
 from ui import componentes as c
 from ui import estado
-from viz.estilo import CONFIG, LETRAS
+from ui.panel import al_cierre
+from viz.estilo import CONFIG, LETRAS, color_ruta
+from viz.evolucion_echarts import opciones_evolucion
 from viz.rutas import grafica_rutas
 
 
+def _tarjeta_ruta(prop, ruta, todo_hoy) -> str:
+    color = color_ruta(ruta.nombre)
+    es_elegida = ruta.nombre == prop.elegida
+    if es_elegida:
+        insignia = c.pill("✓ Elegida", "ok")
+    elif not ruta.valida:
+        insignia = c.pill("✕ No cubre gastos", "bad")
+    else:
+        insignia = ""
+    if todo_hoy is None or ruta.nombre == RUTA_A:
+        frente = "Punto de comparación"
+    else:
+        dif = prop.ahorro_cop if es_elegida else ruta.cop_final - todo_hoy.cop_final
+        frente = f"<b style='color:{'#1f5f24' if es_elegida else '#33403a'}'>{c.pesos_con_signo(dif)}</b> frente a «Todo hoy»"
+    nota = f"<div class='d' style='color:#9c2a5a'>{escape(ruta.nota)}</div>" if ruta.nota else ""
+    return (
+        f"<div class='sl-card{' on' if es_elegida else ''}' style='border-top:4px solid {color}'>"
+        f"<div class='top'><div class='k' style='display:flex;align-items:center;gap:8px'>"
+        f"<span style='width:10px;height:10px;border-radius:999px;background:{color}'></span>Ruta {LETRAS.get(ruta.nombre, '')}</div>{insignia}</div>"
+        f"<div style='font-weight:700;margin-top:6px'>{escape(ruta.nombre)}</div>"
+        f"<div class='v'>{c.pesos(ruta.cop_final)}</div>"
+        f"<div class='d'>{frente}</div>"
+        f"<div class='d'>{escape(ruta.descripcion)} · {len(ruta.operaciones)} operaciones</div>{nota}</div>"
+    )
+
+
 def render() -> None:
-    c.encabezado("Rutas", "Tres formas de convertir lo disponible. El agente elige la que deja más pesos y cumple tus reglas.",
+    c.encabezado("Rutas", "Tres formas de convertir lo disponible. El agente elige la que deja más pesos y cubre tus gastos a tiempo.",
                  simulado=estado.fuente_actual() == "simulado")
     prop = estado.propuesta()
+    pol = estado.politica()
+    historico = st.session_state["mercado"].historico("USD", "COP", 30)
     todo_hoy = next((r for r in prop.rutas if r.nombre == RUTA_A), None)
 
-    cols = st.columns(len(prop.rutas))
+    cols = st.columns(len(prop.rutas), gap="medium")
     for col, ruta in zip(cols, prop.rutas):
-        es_elegida = ruta.nombre == prop.elegida
-        if es_elegida:
-            insignia = c.pill("✓ Elegida", "ok")
-        elif not ruta.valida:
-            insignia = c.pill("✕ No cubre gastos", "bad")
-        else:
-            insignia = ""
-        if todo_hoy is None or ruta.nombre == RUTA_A:
-            frente = "Punto de comparación"
-        else:
-            diferencia = prop.ahorro_cop if es_elegida else ruta.cop_final - todo_hoy.cop_final
-            frente = f"<b>{c.pesos_con_signo(diferencia)}</b> frente a «Todo hoy»"
-        detalle = f"{frente}<br>{len(ruta.operaciones)} operaciones · {escape(ruta.descripcion)}"
-        if ruta.nota:
-            detalle += f"<br><i>{escape(ruta.nota)}</i>"
         with col:
-            c.tarjeta(f"Ruta {LETRAS.get(ruta.nombre, '')} · {ruta.nombre}", c.pesos(ruta.cop_final), detalle,
-                      resaltada=es_elegida, insignia=insignia)
+            c._html(_tarjeta_ruta(prop, ruta, todo_hoy))
 
-    with st.container(border=True):
+    with st.container(border=True, key="card_rutas_evol"):
+        c._html("<div class='sl-ct'><h2>Cómo se acumulan los pesos en cada ruta</h2>"
+                "<p>Pasa el mouse para ver cuánto lleva cada ruta cada día. La línea punteada es lo mínimo para tus gastos fijos.</p></div>")
+        graf, cierre = st.columns([3, 1], gap="small")
+        with graf:
+            c.echarts(opciones_evolucion(prop, historico, pol), alto=380, clave="rutas_evol")
+        with cierre:
+            c._html(al_cierre(prop))
+
+    with st.container(border=True, key="card_rutas_comp"):
         st.plotly_chart(grafica_rutas(prop), width="stretch", config=CONFIG)
 
     c.seccion("Operaciones de cada ruta")
     for ruta in prop.rutas:
-        marca = " ✓" if ruta.nombre == prop.elegida else ""
+        marca = " ✓ elegida" if ruta.nombre == prop.elegida else ""
         with st.expander(f"Ruta {LETRAS.get(ruta.nombre, '')} · {ruta.nombre}{marca}", expanded=ruta.nombre == prop.elegida):
             st.dataframe(
                 [

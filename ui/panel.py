@@ -135,7 +135,7 @@ def _bandeja() -> None:
         st.caption("Solicitudes de ejemplo: la bandeja (aprobaciones/) aún no está conectada.")
 
 
-def _al_cierre(prop) -> str:
+def al_cierre(prop) -> str:
     todo_hoy = next((r for r in prop.rutas if r.nombre == RUTA_A), None)
     base = todo_hoy.cop_final if todo_hoy else Decimal(0)
     maximo = max((r.cop_final - base for r in prop.rutas), default=Decimal(1)) or Decimal(1)
@@ -219,7 +219,7 @@ def render() -> None:
         with graf:
             c.echarts(opciones_evolucion(prop, historico, pol), alto=360, clave="evolucion")
         with cierre:
-            _html(_al_cierre(prop))
+            _html(al_cierre(prop))
     with der.container(border=True, key="card_rutas"):
         _rutas(prop)
 
@@ -243,6 +243,7 @@ def render() -> None:
             "luego, cada semana, sale un tramo del USDT a pesos.</div></div>"
         )
         _html(calendario.html_calendario(prop, pol, reloj.hoy()))
+        c.detalle_operaciones(prop, reloj.hoy(), clave="panel_detalle")
 
     from motor.explicador import explicar
 

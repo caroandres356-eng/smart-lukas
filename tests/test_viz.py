@@ -170,3 +170,18 @@ def test_calendario_una_ficha_por_operacion(propuesta_motor, politica):
     assert html.count("class='evt'") == len(politica.gastos_fijos)
     conteo = resumen(propuesta_motor)
     assert conteo["auto"] + conteo["requiere_aprobacion"] + conteo["bloqueada"] == conteo["total"]
+
+
+def test_momento_de_cada_operacion_segun_el_reloj(propuesta_motor):
+    from datetime import timedelta
+
+    from ui.calendario import momento
+
+    dia_pago = propuesta_motor.ingreso.fecha
+    arriendo = next(v for v in propuesta_motor.veredictos if v.estado == "requiere_aprobacion")
+    automatica = next(v for v in propuesta_motor.veredictos if v.estado == "auto" and v.operacion.fecha_programada == dia_pago)
+    assert momento(automatica, dia_pago) == ("hoy", "Hoy")
+    assert momento(automatica, dia_pago - timedelta(days=1))[0] == "prog"
+    assert momento(automatica, dia_pago + timedelta(days=1)) == ("hecha", "Hecha")
+    # Sin permiso y con la fecha pasada, no se ejecuta (regla de la bandeja).
+    assert momento(arriendo, dia_pago + timedelta(days=1))[0] == "nohecha"

@@ -1,5 +1,8 @@
 """Pantalla 5: Política (reglas claras definidas por la persona)."""
 
+from decimal import Decimal
+from html import escape
+
 import streamlit as st
 
 from core.modelos import CambioPolitica
@@ -17,6 +20,17 @@ def _frase(regla: CambioPolitica) -> tuple[str, str]:
     return f"Nunca hacer {que}", "bad"
 
 
+def _barra(valor: Decimal, limite: Decimal, texto: str) -> str:
+    """Barra de uso del límite: verde si cabe, ámbar si lo supera (esa operación pide permiso)."""
+    supera = valor > limite
+    ancho = 100 if supera or limite <= 0 else float(valor / limite * 100)
+    color = "#c98a1b" if supera else "#2e7d32"
+    aviso = " · supera el límite, pide permiso" if supera else " · dentro del límite"
+    return (f"<div style='height:9px;background:#eef1ef;border-radius:999px;overflow:hidden;margin:8px 0 6px'>"
+            f"<div style='width:{ancho:.0f}%;height:100%;background:{color};border-radius:999px'></div></div>"
+            f"{escape(texto)}<b style='color:{'#7a4a00' if supera else '#1f5f24'}'>{aviso}</b>")
+
+
 def render() -> None:
     c.encabezado("Política", "Tus reglas. El agente nunca las rompe y te avisa siempre que una aplica.",
                  simulado=estado.fuente_actual() == "simulado")
@@ -25,11 +39,27 @@ def render() -> None:
     pol = estado.politica()
 
     c.seccion("Límites sin aprobación")
+    # Cómo encaja el plan del motor en tus límites (solo se comparan montos de la propuesta con la política).
+    prop = estado.propuesta()
+    a_pesos = [v.operacion for v in prop.veredictos if v.operacion.hacia == "COP" and v.estado != "bloqueada"]
+    mayor = max(a_pesos, key=lambda o: o.monto, default=None)
+    por_dia: dict = {}
+    for o in a_pesos:
+        por_dia[o.fecha_programada] = por_dia.get(o.fecha_programada, Decimal(0)) + o.monto
+    dia_max = max(por_dia, key=por_dia.get, default=None)
     c1, c2 = st.columns(2)
     with c1:
-        c.tarjeta("Por operación", c.dolares(pol.auto_max_usd_por_operacion), "Más que esto va a tu bandeja")
+        detalle = "Más que esto va a tu bandeja"
+        if mayor:
+            detalle = _barra(mayor.monto, pol.auto_max_usd_por_operacion,
+                             f"La mayor del plan: {c.dolares(mayor.monto)} ({mayor.categoria})")
+        c.tarjeta("Por operación", c.dolares(pol.auto_max_usd_por_operacion), detalle)
     with c2:
-        c.tarjeta("Por día", c.dolares(pol.auto_max_usd_por_dia), "Suma de las conversiones del día")
+        detalle = "Suma de las conversiones del día"
+        if dia_max:
+            detalle = _barra(por_dia[dia_max], pol.auto_max_usd_por_dia,
+                             f"El día con más conversiones ({c.fecha_corta(dia_max)}): {c.dolares(por_dia[dia_max])}")
+        c.tarjeta("Por día", c.dolares(pol.auto_max_usd_por_dia), detalle)
 
     c.seccion("Reservas")
     c3, c4 = st.columns(2)

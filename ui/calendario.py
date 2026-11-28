@@ -37,6 +37,34 @@ def _texto(v: Veredicto, tramo: int | None, total_tramos: int) -> str:
     return base
 
 
+def momento(v: Veredicto, hoy: date) -> tuple[str, str]:
+    """(clave, texto) del momento de la operación según el reloj de simulación.
+
+    No se ejecuta nada en el banco: es lo que PASARÍA con las reglas. Una operación que pide permiso
+    y cuya fecha ya pasó sin aprobación no se ejecuta (regla de la bandeja: sin respuesta, nada).
+    """
+    fecha = v.operacion.fecha_programada
+    if fecha > hoy:
+        return "prog", "Programada"
+    if fecha == hoy:
+        return "hoy", "Hoy"
+    if v.estado == "auto":
+        return "hecha", "Hecha"
+    if v.estado == "requiere_aprobacion":
+        return "nohecha", "No se ejecutó · sin permiso"
+    return "nohecha", "No se ejecuta"
+
+
+def titulo_operacion(v: Veredicto, propuesta: Propuesta) -> str:
+    """"01 nov · Arriendo · 449,05 USD → COP" (para el selector de detalle)."""
+    tramos = sorted(x.operacion.fecha_programada for x in propuesta.veredictos if x.operacion.categoria == "escalonado")
+    numero = {f: i + 1 for i, f in enumerate(tramos)}
+    op = v.operacion
+    base = _texto(v, numero.get(op.fecha_programada), len(tramos)).split(" · espera")[0].split(" · bloqueada")[0]
+    meses = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
+    return f"{op.fecha_programada.day:02d} {meses[op.fecha_programada.month - 1]} · {base} · {fmt_usd(op.monto)} {op.desde} → {op.hacia or ''}"
+
+
 def resumen(propuesta: Propuesta) -> dict[str, int]:
     conteo = {"total": len(propuesta.veredictos), "auto": 0, "requiere_aprobacion": 0, "bloqueada": 0}
     for v in propuesta.veredictos:
@@ -63,7 +91,7 @@ def html_calendario(propuesta: Propuesta, politica: Politica, hoy: date) -> str:
 
     # Las columnas (días de la semana) donde hay operaciones van más anchas, para que las fichas respiren.
     columnas_hl = {d.weekday() for d in por_dia}
-    plantilla = " ".join("minmax(0,2.3fr)" if i in columnas_hl else "minmax(0,1fr)" for i in range(7))
+    plantilla = " ".join("minmax(0,2fr)" if i in columnas_hl else "minmax(96px,1fr)" for i in range(7))
     partes = [f"<div class='sl-cal-wrap'><div class='sl-cal' style='grid-template-columns:{plantilla}'>"]
     partes += [f"<div class='wd{' hl' if i in columnas_hl else ''}'>{d}</div>" for i, d in enumerate(DIAS_SEMANA)]
 
@@ -85,9 +113,11 @@ def html_calendario(propuesta: Propuesta, politica: Politica, hoy: date) -> str:
             for v in ops:
                 op = v.operacion
                 texto = _texto(v, numero_tramo.get(op.fecha_programada), len(tramos))
+                clave, cuando = momento(v, hoy)
                 fichas.append(
-                    f"<div class='chip {CLASE[v.estado]}' title='{escape(v.motivo, quote=True)}'><i class='dot'></i>"
-                    f"<div><b>{fmt_usd(op.monto)} {op.desde} → {op.hacia or ''}</b><span>{escape(texto)}</span></div></div>"
+                    f"<div class='chip {CLASE[v.estado]} m-{clave}' title='{escape(v.motivo, quote=True)}'><i class='dot'></i>"
+                    f"<div><b>{fmt_usd(op.monto)} {op.desde} → {op.hacia or ''}</b><span>{escape(texto)}</span>"
+                    f"<em>{escape(cuando)}</em></div></div>"
                 )
             partes.append(f"<div class='{clases}'>{cab}{''.join(fichas)}{''.join(gastos.get(dia, []))}</div>")
         dia += timedelta(days=1)

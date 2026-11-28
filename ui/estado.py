@@ -18,6 +18,9 @@ import streamlit as st
 from core.modelos import Politica, Propuesta, Solicitud
 from fakes import fakes
 
+# Páginas de la navegación (las registra app.py) para enlazarlas con st.page_link desde cualquier pantalla.
+PAGINAS: dict[str, Any] = {}
+
 
 # --------------------------------------------------------------------------- utilidades
 

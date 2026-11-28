@@ -111,8 +111,13 @@ CSS = """
 .sl-cal .chip.warn .dot { background:#fff; border:2.5px solid #c98a1b; flex-basis:11px; height:11px; }
 .sl-cal .chip.warn span { color:#7a4a00; font-weight:600; }
 .sl-cal .chip.bad { background:var(--sl-rojo-suave); } .sl-cal .chip.bad .dot { background:var(--sl-rojo); border-radius:2px; }
+.sl-cal .chip em { display:block; font-style:normal; font-size:.62rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.05em; margin-top:3px; color:var(--sl-tinta-2); }
+.sl-cal .chip.m-hecha { opacity:.78; } .sl-cal .chip.m-hecha em { color:#1f5f24; } .sl-cal .chip.m-hecha em::before { content:"✓ "; }
+.sl-cal .chip.m-hoy em { display:none; }
+.sl-cal .chip.m-nohecha { opacity:.85; } .sl-cal .chip.m-nohecha b { text-decoration:line-through; } .sl-cal .chip.m-nohecha em { color:var(--sl-rojo); }
 .sl-cal .evt { font-size:.74rem; line-height:1.35; color:#33403a; background:#f1f3f2; border:1px solid #dfe5e1; border-radius:9px; padding:6px 8px; }
-.sl-cal .evt b { display:block; font-size:.8rem; color:var(--sl-tinta); }
+.sl-cal .evt b { display:block; font-size:.8rem; color:var(--sl-tinta); white-space:nowrap; }
 .sl-cal .evt span { display:block; color:var(--sl-tinta-2); font-size:.7rem; }
 .sl-stats { display:flex; gap:12px; flex-wrap:wrap; margin-top:14px; }
 .sl-stats > div { padding:10px 14px; border-radius:12px; background:#f7f9f8; border:1px solid var(--sl-borde); }
@@ -168,7 +173,7 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 .sl-hero .d { color:var(--sl-tinta-2); margin-top:6px; font-size:1rem; }
 
 /* Filas tipo lista (operaciones, historial) */
-.sl-row { display:grid; grid-template-columns: 190px 1fr auto; gap:14px; align-items:center; background:var(--sl-tarjeta);
+.sl-row { display:grid; grid-template-columns: 250px 1fr auto; gap:14px; align-items:center; background:var(--sl-tarjeta);
   border:1px solid var(--sl-borde); border-radius:12px; padding:12px 16px; margin-bottom:8px; }
 .sl-row .m { font-weight:700; color:var(--sl-tinta); }
 .sl-row .s { color:var(--sl-tinta-2); font-size:0.88rem; }
@@ -284,6 +289,39 @@ def echarts(opciones: dict, alto: int = 360, clave: str | None = None) -> None:
     from streamlit_echarts import st_echarts
 
     st_echarts(options=opciones, height=f"{alto}px", key=clave)
+
+
+def detalle_operaciones(propuesta, hoy: date, clave: str) -> None:
+    """Selector de operación (st.pills) + tarjeta con su detalle: el calendario se vuelve interactivo.
+
+    No ejecuta nada: muestra qué hará el agente, por qué (motivo del motor) y en qué momento está según el reloj.
+    """
+    from ui import calendario, estado
+
+    # La opción es el título de la operación (no su posición): si el reloj avanza y la lista se reordena,
+    # la selección sigue apuntando a la misma operación.
+    por_titulo = {calendario.titulo_operacion(v, propuesta): v for v in propuesta.veredictos}
+    elegido = st.pills("Ver el detalle de una operación", list(por_titulo), selection_mode="single", key=clave)
+    if elegido is None or elegido not in por_titulo:
+        st.caption("Elige una operación para ver qué regla aplicó el agente y en qué momento está.")
+        return
+    v = por_titulo[elegido]
+    op = v.operacion
+    clave_m, cuando = calendario.momento(v, hoy)
+    clase_m = {"hecha": "ok", "hoy": "ok", "prog": "neutral", "nohecha": "bad"}[clave_m]
+    destino = f" → {op.hacia}" if op.hacia else ""
+    _html(
+        "<div class='sl-card' style='margin-top:8px'>"
+        f"<div class='top'><div class='k'>{escape(calendario.titulo_operacion(v, propuesta).split(' · ')[1])}</div>"
+        f"<div style='display:flex;gap:6px;flex-wrap:wrap'>{insignia_estado(v.estado)}{pill(cuando, clase_m)}</div></div>"
+        f"<div class='v'>{fmt_usd(op.monto)} {op.desde}{destino}</div>"
+        f"<div class='d'>{fecha_corta(op.fecha_programada)} · {escape(op.categoria)}</div>"
+        f"<div style='background:#f7f9f8;border:1px solid #e2e8e4;border-radius:12px;padding:11px 13px;margin-top:12px;"
+        f"font-size:.9rem;line-height:1.5;color:#33403a'><b>Regla aplicada:</b> {escape(v.motivo)}</div>"
+        "<div class='d' style='font-size:.78rem'>Simulación: el agente aún no ejecuta operaciones en el banco.</div></div>"
+    )
+    if v.estado == "requiere_aprobacion" and clave_m != "nohecha" and "bandeja" in estado.PAGINAS:
+        st.page_link(estado.PAGINAS["bandeja"], label="Ir a la Bandeja para darle permiso", icon=":material/inbox:")
 
 
 def seccion(titulo: str) -> None:

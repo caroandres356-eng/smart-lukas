@@ -73,6 +73,7 @@ def main() -> None:
         st.Page(_segura(fn), title=titulo, icon=icono, url_path=ruta, default=i == 0)
         for i, (titulo, fn, icono, ruta) in enumerate(PANTALLAS)
     ]
+    estado.PAGINAS.update({ruta: p for (_, _, _, ruta), p in zip(PANTALLAS, paginas)})
     pagina = st.navigation(paginas, position="top")
     barra_simulacion()
     pagina.run()
