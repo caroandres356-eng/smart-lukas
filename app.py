@@ -16,12 +16,13 @@ load_dotenv()
 
 import streamlit as st  # noqa: E402
 
-from ui import bandeja, cierre, componentes, estado, operaciones, pago, politica, rutas  # noqa: E402
+from ui import bandeja, cierre, componentes, estado, operaciones, pago, panel, politica, rutas  # noqa: E402
 
 MARCA = Path(__file__).parent / "ui" / "marca.svg"
 
 # (título, función, ícono, ruta en la URL)
 PANTALLAS: list[tuple[str, Callable[[], None], str, str]] = [
+    ("Panel", panel.render, ":material/dashboard:", "panel"),
     ("Llega el pago", pago.render, ":material/payments:", "pago"),
     ("Rutas", rutas.render, ":material/alt_route:", "rutas"),
     ("Operaciones", operaciones.render, ":material/swap_horiz:", "operaciones"),

@@ -25,7 +25,7 @@ def grafica_rutas(propuesta: Propuesta) -> go.Figure:
         diferencia = propuesta.ahorro_cop if es_elegida else ruta.cop_final - todo_hoy.cop_final
         nombres.append(estilo.nombre_corto(ruta.nombre))
         diferencias.append(float(diferencia))
-        colores.append(estilo.VERDE if es_elegida else estilo.GRIS)
+        colores.append(estilo.color_ruta(ruta.nombre))
 
         if ruta.nombre == RUTA_A:
             etiqueta = "referencia"

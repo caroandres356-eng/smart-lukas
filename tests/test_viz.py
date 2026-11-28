@@ -45,7 +45,7 @@ def figuras(propuesta, politica, historico):
 
 def test_viz_no_importa_streamlit():
     codigo = (
-        "import sys; import viz.rutas, viz.reparto, viz.evolucion; "
+        "import sys; import viz.rutas, viz.reparto, viz.evolucion, viz.flujo, viz.evolucion_echarts, ui.calendario; "
         "sys.exit(1 if 'streamlit' in sys.modules else 0)"
     )
     assert subprocess.run([sys.executable, "-c", codigo]).returncode == 0
@@ -119,3 +119,54 @@ def test_evolucion_una_linea_por_ruta_y_elegida_en_verde(propuesta, historico, p
     assert len(lineas) == 3
     verdes = [t for t in lineas if t.line.color == estilo.VERDE]
     assert len(verdes) == 1 and propuesta.elegida in verdes[0].name
+
+
+# --------------------------------------------------------------------------- Panel (ECharts y calendario)
+
+
+@pytest.fixture
+def propuesta_motor(politica):
+    return proponer(fakes.cargar_ingreso_ejemplo(), fakes.BancoFalso(), fakes.MercadoFalso(), fakes.RelojFalso(), politica)
+
+
+def test_flujo_cuadra_con_las_reservas_del_motor(propuesta_motor, politica):
+    from motor.rutas import calcular_reservas
+    from viz.flujo import destinos, opciones_flujo
+
+    reservas = calcular_reservas(propuesta_motor.ingreso, politica)
+    assert sum(m for m, _ in destinos(propuesta_motor).values()) == reservas.disponible_usd
+
+    sankey = opciones_flujo(propuesta_motor, politica)["series"][0]
+    desde_pago = sum(e["value"] for e in sankey["links"] if e["source"].startswith("Pago"))
+    assert desde_pago == pytest.approx(float(propuesta_motor.ingreso.monto))
+
+
+def test_minimo_para_gastos_sigue_la_politica(politica, historico):
+    from viz.evolucion_echarts import minimo_gastos
+
+    minimo = minimo_gastos(politica, historico)
+    assert len(minimo) == 30
+    assert minimo[0] is None  # antes del arriendo (día 5) no hay que pagar nada
+    assert minimo[4] == Decimal("1800000")  # día 5: arriendo
+    assert minimo[9] == Decimal("1920000")  # día 10: arriendo + internet
+
+
+def test_evolucion_echarts_marca_el_faltante_de_la_ruta_no_valida(propuesta_motor, historico, politica):
+    from viz.evolucion_echarts import opciones_evolucion
+
+    opciones = opciones_evolucion(propuesta_motor, historico, politica)
+    invalidas = [r for r in propuesta_motor.rutas if not r.valida]
+    pilas = {s.get("stack") for s in opciones["series"] if s.get("stack")}
+    assert pilas == {f"falta-{estilo.LETRAS[r.nombre]}" for r in invalidas}
+    elegida = next(s for s in opciones["series"] if s.get("name", "").endswith(propuesta_motor.elegida))
+    assert elegida["data"][-1] == pytest.approx(float(propuesta_motor.ruta_elegida().cop_final), abs=1)
+
+
+def test_calendario_una_ficha_por_operacion(propuesta_motor, politica):
+    from ui.calendario import html_calendario, resumen
+
+    html = html_calendario(propuesta_motor, politica, propuesta_motor.ingreso.fecha)
+    assert html.count("class='chip ") == len(propuesta_motor.veredictos)
+    assert html.count("class='evt'") == len(politica.gastos_fijos)
+    conteo = resumen(propuesta_motor)
+    assert conteo["auto"] + conteo["requiere_aprobacion"] + conteo["bloqueada"] == conteo["total"]

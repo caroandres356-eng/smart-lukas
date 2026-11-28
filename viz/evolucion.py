@@ -35,10 +35,8 @@ def serie_pesos(ruta: Ruta, historico: list[Cotizacion]) -> list[tuple[date, Dec
     return serie
 
 
-def _color(nombre: str, es_elegida: bool) -> str:
-    if es_elegida:
-        return estilo.VERDE
-    return {RUTA_A: estilo.GRIS_A, RUTA_C: estilo.GRIS_C}.get(nombre, estilo.GRIS)
+def _color(nombre: str, es_elegida: bool) -> str:  # noqa: ARG001 (la elegida se distingue por el grosor)
+    return estilo.color_ruta(nombre)
 
 
 def grafica_evolucion(propuesta: Propuesta, historico: list[Cotizacion], politica: Politica | None = None) -> go.Figure:
@@ -80,7 +78,7 @@ def grafica_evolucion(propuesta: Propuesta, historico: list[Cotizacion], politic
                     x=[f for f, _ in puntos],
                     y=[float(v) for _, v in puntos],
                     mode="markers",
-                    marker=dict(size=10, color=estilo.VERDE, line=dict(width=2, color=estilo.TINTA_CLARA)),
+                    marker=dict(size=10, color=estilo.color_ruta(ruta.nombre), line=dict(width=2, color=estilo.TINTA_CLARA)),
                     showlegend=False,
                     hoverinfo="skip",
                 )

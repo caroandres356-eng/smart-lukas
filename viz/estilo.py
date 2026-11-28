@@ -7,7 +7,8 @@ Decisiones:
   de Streamlit reemplaza la plantilla pero respeta lo que el layout trae explícito.
 - Los textos generales NO llevan color fijo: así Streamlit los pinta bien en tema claro y oscuro.
   Solo el texto secundario usa un gris medio legible sobre ambos fondos.
-- Énfasis: la ruta elegida en verde y todo lo demás en gris (es "resaltar una", no una paleta categórica).
+- Cada ruta tiene SU color (el color sigue a la ruta, no a su puesto): B verde, A azul, C rosa.
+  La paleta pasó el validador de daltonismo y contraste. La elegida además va más gruesa.
 """
 
 from __future__ import annotations
@@ -32,10 +33,46 @@ EJE = "rgba(128,128,128,0.45)"
 TINTA_CLARA = "#ffffff"  # texto dentro de rellenos oscuros
 TINTA_OSCURA = "#0b0b0b"  # texto dentro de rellenos claros
 
-FUENTE = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
+AZUL = "#3b6fd8"  # ruta A · Todo hoy
+ROSA = "#e0558f"  # ruta C · Mitad y mitad
+TEAL = "#1f7a8c"  # dinero que queda rindiendo en USDT
+TINTA = "#17201b"  # texto principal (igual que el tema)
+TINTA_2 = "#4d5a53"  # texto secundario sobre fondo blanco (contraste 6:1)
+
+FUENTE = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
 
 LETRAS = {RUTA_A: "A", RUTA_B: "B", RUTA_C: "C"}
+COLOR_RUTA = {RUTA_A: AZUL, RUTA_B: VERDE, RUTA_C: ROSA}
 ROTULO_SIMULADO = "Datos simulados"
+
+
+def color_ruta(nombre: str) -> str:
+    return COLOR_RUTA.get(nombre, GRIS)
+
+
+# --------------------------------------------------------------------------- ECharts
+
+# streamlit-echarts (0.7) reconoce una función de JavaScript cuando va envuelta en este marcador
+# (es lo que hace su clase JsCode). Lo generamos aquí para que viz/ no importe Streamlit.
+_MARCA_JS = "--x_x--0_0--"
+
+
+def js(codigo: str) -> str:
+    """Función de JavaScript para una opción de ECharts (formateadores de ejes y tooltips)."""
+    return f"{_MARCA_JS}{codigo}{_MARCA_JS}"
+
+
+JS_PESOS = "function(v){return '$'+Math.round(v).toLocaleString('es-CO');}"
+JS_USD = "function(v){return Number(v).toLocaleString('es-CO',{maximumFractionDigits:2})+' USD';}"
+
+TEXTO_ECHARTS = {"fontFamily": FUENTE, "color": TINTA}
+TOOLTIP_ECHARTS = {
+    "backgroundColor": TINTA,
+    "borderWidth": 0,
+    "padding": [10, 12],
+    "textStyle": {"color": "#e7ece9", "fontFamily": FUENTE, "fontSize": 12},
+    "extraCssText": "border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.18);",
+}
 
 
 # --------------------------------------------------------------------------- formato
