@@ -204,15 +204,15 @@ def render() -> None:
     _kpis(prop, conteo, historico)
 
     izq, der = st.columns([2, 1], gap="medium")
-    with izq.container(border=True, key="card_flujo"):
+    with izq.container(border=True, key="card_flujo", height="stretch"):
         _titulo("Así se reparte tu pago",
                 "Del pago se apartan impuestos y colchón; del disponible, hoy se convierte lo justo para tus gastos.")
-        c.echarts(opciones_flujo(prop, pol), alto=330, clave="flujo")
-    with der.container(border=True, key="card_bandeja"):
+        c.echarts(opciones_flujo(prop, pol), alto=420, clave="flujo")
+    with der.container(border=True, key="card_bandeja", height="stretch"):
         _bandeja()
 
     izq, der = st.columns([2, 1], gap="medium")
-    with izq.container(border=True, key="card_evolucion"):
+    with izq.container(border=True, key="card_evolucion", height="stretch"):
         _titulo(f"Tus pesos durante {mes}",
                 f"La ruta {letra} convierte lo que necesitas para tus gastos y deja el resto rindiendo.")
         graf, cierre = st.columns([3, 1], gap="small")
@@ -220,7 +220,7 @@ def render() -> None:
             c.echarts(opciones_evolucion(prop, historico, pol), alto=360, clave="evolucion")
         with cierre:
             _html(al_cierre(prop))
-    with der.container(border=True, key="card_rutas"):
+    with der.container(border=True, key="card_rutas", height="stretch"):
         _rutas(prop)
 
     with st.container(border=True, key="card_calendario"):
