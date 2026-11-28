@@ -296,7 +296,7 @@ def detalle_operaciones(propuesta, hoy: date, clave: str) -> None:
 
     No ejecuta nada: muestra qué hará el agente, por qué (motivo del motor) y en qué momento está según el reloj.
     """
-    from ui import calendario, estado
+    from ui import calendario
 
     # La opción es el título de la operación (no su posición): si el reloj avanza y la lista se reordena,
     # la selección sigue apuntando a la misma operación.
@@ -320,8 +320,8 @@ def detalle_operaciones(propuesta, hoy: date, clave: str) -> None:
         f"font-size:.9rem;line-height:1.5;color:#33403a'><b>Regla aplicada:</b> {escape(v.motivo)}</div>"
         "<div class='d' style='font-size:.78rem'>Simulación: el agente aún no ejecuta operaciones en el banco.</div></div>"
     )
-    if v.estado == "requiere_aprobacion" and clave_m != "nohecha" and "bandeja" in estado.PAGINAS:
-        st.page_link(estado.PAGINAS["bandeja"], label="Ir a la Bandeja para darle permiso", icon=":material/inbox:")
+    if v.estado == "requiere_aprobacion" and clave_m != "nohecha" and "bandeja" in st.session_state.get("paginas", {}):
+        st.page_link(st.session_state["paginas"]["bandeja"], label="Ir a la Bandeja para darle permiso", icon=":material/inbox:")
 
 
 def seccion(titulo: str) -> None:
